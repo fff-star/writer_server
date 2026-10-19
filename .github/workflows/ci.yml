@@ -59,12 +59,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ilammy/msvc-dev-cmd@7defe9254715b088f12dddd9942945a3d75cdad5
       - name: Build sandbox helper
         working-directory: native/windows-sandbox
-        shell: cmd
-        run: |
-          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          call build.cmd
+        run: .\build.cmd
       - name: Test sandbox helper
         working-directory: native/windows-sandbox
         shell: pwsh

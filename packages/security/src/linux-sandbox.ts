@@ -15,8 +15,24 @@ export type LinuxSandboxResult = {
   signal: NodeJS.Signals | null;
   stdout: string;
   stderr: string;
+  warnings: string[];
   timedOut: boolean;
 };
+
+function normalizeStderr(stderr: string): { stderr: string; warnings: string[] } {
+  const warnings: string[] = [];
+  const lines = stderr
+    .split(/\r?\n/)
+    .filter((line) => line.length > 0)
+    .filter((line) => {
+      if (line === "bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted") {
+        warnings.push(line);
+        return false;
+      }
+      return true;
+    });
+  return { stderr: lines.join("\n"), warnings };
+}
 
 function sandboxArguments(request: LinuxSandboxRequest): string[] {
   const args = [
@@ -89,7 +105,15 @@ export async function runLinuxSandbox(request: LinuxSandboxRequest): Promise<Lin
     });
     child.on("close", (code, signal) => {
       clearTimeout(timeout);
-      resolvePromise({ code, signal, stdout, stderr, timedOut });
+      const normalized = normalizeStderr(stderr);
+      resolvePromise({
+        code,
+        signal,
+        stdout,
+        stderr: normalized.stderr,
+        warnings: normalized.warnings,
+        timedOut,
+      });
     });
   });
 }
