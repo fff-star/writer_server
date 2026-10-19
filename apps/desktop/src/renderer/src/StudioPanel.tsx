@@ -59,6 +59,11 @@ function newBlockId(): string {
   return `b${Date.now().toString(36)}-${blockCounter}`;
 }
 
+function formatTime(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? iso : date.toLocaleString("zh-CN", { hour12: false });
+}
+
 function createBlock(type: Block["type"]): Block {
   const id = newBlockId();
   switch (type) {
@@ -111,7 +116,7 @@ function CitationPicker(props: { onPick: (label: string, locator: string) => voi
           placeholder="检索资料库以选择来源"
           aria-label="检索资料库以选择来源"
         />
-        <button type="submit" disabled={searching}>
+        <button type="submit" className="button-secondary" disabled={searching}>
           检索
         </button>
       </form>
@@ -123,6 +128,7 @@ function CitationPicker(props: { onPick: (label: string, locator: string) => voi
               <span>{result.text}</span>
               <button
                 type="button"
+                className="button-secondary"
                 onClick={() =>
                   props.onPick(
                     result.snapshotName,
@@ -150,7 +156,7 @@ function BlockEditor(props: {
     <div className="studio-block" data-block-type={block.type}>
       <div className="studio-block-head">
         <span>{blockTypeLabels[block.type]}</span>
-        <button type="button" onClick={props.onRemove}>
+        <button type="button" className="button-secondary" onClick={props.onRemove}>
           删除
         </button>
       </div>
@@ -285,7 +291,7 @@ function BlockEditor(props: {
   );
 }
 
-export function StudioPanel() {
+export function StudioPanel({ projectId }: { projectId: string }) {
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<OfficeDocument | null>(null);
@@ -297,7 +303,7 @@ export function StudioPanel() {
   const [message, setMessage] = useState("选择或新建文档开始编辑");
 
   const refreshDocuments = async () => {
-    setDocuments((await window.officeAgent.studio.listDocuments()) as DocumentSummary[]);
+    setDocuments((await window.officeAgent.studio.listDocuments(projectId)) as DocumentSummary[]);
   };
 
   const loadVersions = async (documentId: string) => {
@@ -336,7 +342,7 @@ export function StudioPanel() {
 
   useEffect(() => {
     void refreshDocuments();
-  }, []);
+  }, [projectId]);
 
   const createDocument = async (event: FormEvent) => {
     event.preventDefault();
@@ -346,12 +352,15 @@ export function StudioPanel() {
     }
     setBusy(true);
     try {
-      const version = (await window.officeAgent.studio.createDocument({
-        schemaVersion: 1,
-        title,
-        style: "standard",
-        blocks: [],
-      })) as DocumentVersion;
+      const version = (await window.officeAgent.studio.createDocument(
+        {
+          schemaVersion: 1,
+          title,
+          style: "standard",
+          blocks: [],
+        },
+        projectId,
+      )) as DocumentVersion;
       setNewTitle("");
       await refreshDocuments();
       setMessage(`已创建「${title}」`);
@@ -475,13 +484,7 @@ export function StudioPanel() {
   };
 
   return (
-    <section className="studio-panel" aria-labelledby="studio-title">
-      <div className="library-heading">
-        <div>
-          <p className="eyebrow">DOCUMENT STUDIO</p>
-          <h2 id="studio-title">文档工作台</h2>
-        </div>
-      </div>
+    <section className="studio-panel" aria-label="文档工作台">
       <p className="library-message" data-testid="studio-message">
         {message}
       </p>
@@ -492,7 +495,7 @@ export function StudioPanel() {
           placeholder="新文档标题"
           aria-label="新文档标题"
         />
-        <button type="submit" disabled={busy || !newTitle.trim()}>
+        <button type="submit" className="button-primary" disabled={busy || !newTitle.trim()}>
           新建文档
         </button>
       </form>
@@ -506,10 +509,15 @@ export function StudioPanel() {
               onClick={() => void selectDocument(document.id)}
             >
               <strong>{document.title}</strong>
-              <span>{document.createdAt}</span>
+              <span>{formatTime(document.createdAt)}</span>
             </article>
           ))}
         </div>
+      )}
+      {documents.length === 0 && (
+        <p className="library-message">
+          这个项目还没有文档。在上方新建一个，或到对话中让 Agent 起草。
+        </p>
       )}
       {draft && (
         <div className="studio-editor">
@@ -522,19 +530,44 @@ export function StudioPanel() {
             />
           </div>
           <div className="studio-toolbar">
-            <button type="button" onClick={() => addBlock("heading")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => addBlock("heading")}
+              disabled={busy}
+            >
               添加标题
             </button>
-            <button type="button" onClick={() => addBlock("paragraph")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => addBlock("paragraph")}
+              disabled={busy}
+            >
               添加段落
             </button>
-            <button type="button" onClick={() => addBlock("list")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => addBlock("list")}
+              disabled={busy}
+            >
               添加列表
             </button>
-            <button type="button" onClick={() => addBlock("table")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => addBlock("table")}
+              disabled={busy}
+            >
               添加表格
             </button>
-            <button type="button" onClick={() => addBlock("citation")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => addBlock("citation")}
+              disabled={busy}
+            >
               添加引用
             </button>
           </div>
@@ -549,13 +582,23 @@ export function StudioPanel() {
             ))}
           </div>
           <div className="studio-toolbar">
-            <button type="button" onClick={saveVersion} disabled={busy}>
+            <button type="button" className="button-primary" onClick={saveVersion} disabled={busy}>
               保存版本
             </button>
-            <button type="button" onClick={() => void exportFile("docx")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => void exportFile("docx")}
+              disabled={busy}
+            >
               导出 DOCX
             </button>
-            <button type="button" onClick={() => void exportFile("pdf")} disabled={busy}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => void exportFile("pdf")}
+              disabled={busy}
+            >
               导出 PDF
             </button>
           </div>
@@ -566,13 +609,22 @@ export function StudioPanel() {
               placeholder="起草主题"
               aria-label="起草主题"
             />
-            <button type="submit" disabled={busy || !draftTopic.trim()}>
+            <button
+              type="submit"
+              className="button-secondary"
+              disabled={busy || !draftTopic.trim()}
+            >
               请求 Agent 草稿
             </button>
           </form>
           {agentDraft && (
             <div className="studio-toolbar">
-              <button type="button" onClick={mergeAgentDraft} disabled={busy}>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={mergeAgentDraft}
+                disabled={busy}
+              >
                 合并 Agent 修订
               </button>
             </div>
@@ -583,7 +635,7 @@ export function StudioPanel() {
                 <article key={version.id}>
                   <strong>
                     版本 {index + 1} · {version.authorKind === "human" ? "人工" : "Agent"} ·{" "}
-                    {version.createdAt}
+                    {formatTime(version.createdAt)}
                   </strong>
                   <span>
                     父版本 {version.parentId ?? "无"}

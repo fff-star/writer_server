@@ -150,4 +150,52 @@ describe("StudioService", () => {
     expect(() => studio.resolveDocument({})).toThrow();
     expect(() => studio.resolveDocument({ document: { title: "" } })).toThrow();
   });
+
+  it("creates, lists, and renames projects with validation", async () => {
+    const studio = await openService();
+    expect(() => studio.createProject({ name: "" })).toThrow();
+    expect(() => studio.createProject("项目")).toThrow();
+    const project = studio.createProject({ name: "季度报告" });
+    expect(studio.listProjects().map((entry) => entry.id)).toEqual([project.id]);
+    expect(studio.renameProject(project.id, { name: "年度报告" }).name).toBe("年度报告");
+    expect(() => studio.renameProject("missing", { name: "x" })).toThrow();
+  });
+
+  it("binds documents to projects and keeps the default-project fallback", async () => {
+    const studio = await openService();
+    const project = studio.createProject({ name: "项目甲" });
+    const bound = studio.createDocument(baseDocument, project.id);
+    const unbound = studio.createDocument(baseDocument);
+
+    expect(studio.listDocuments(project.id).map((entry) => entry.id)).toEqual([bound.documentId]);
+    expect(studio.listDocuments()).toHaveLength(2);
+    const fallbackId = studio
+      .listDocuments()
+      .find((entry) => entry.id === unbound.documentId)?.projectId;
+    expect(studio.listProjects().some((entry) => entry.id === fallbackId)).toBe(true);
+
+    expect(() => studio.createDocument(baseDocument, "missing")).toThrow();
+    expect(() => studio.appendVersion(bound.documentId, baseDocument, project.id)).not.toThrow();
+    expect(() =>
+      studio.appendVersion(bound.documentId, baseDocument, unbound.documentId),
+    ).toThrow();
+  });
+
+  it("appends and lists conversation messages with validation", async () => {
+    const studio = await openService();
+    const project = studio.createProject({ name: "项目甲" });
+    expect(() => studio.appendMessage(project.id, { role: "system", text: "x" })).toThrow();
+    expect(() => studio.appendMessage(project.id, { role: "user", text: "" })).toThrow();
+    expect(() => studio.appendMessage("missing", { role: "user", text: "x" })).toThrow();
+
+    studio.appendMessage(project.id, { role: "user", text: "汇总预算" });
+    studio.appendMessage(project.id, {
+      role: "agent",
+      text: "识别到 1 个季度预算。",
+      payload: { rows: [{ title: "Q1", detail: "100" }] },
+    });
+    const messages = studio.listMessages(project.id);
+    expect(messages.map((entry) => entry.role)).toEqual(["user", "agent"]);
+    expect(messages[1]?.payload).toEqual({ rows: [{ title: "Q1", detail: "100" }] });
+  });
 });

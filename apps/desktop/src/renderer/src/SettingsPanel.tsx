@@ -64,13 +64,7 @@ export function SettingsPanel() {
   };
 
   return (
-    <section className="settings-panel" aria-labelledby="settings-title">
-      <div className="library-heading">
-        <div>
-          <p className="eyebrow">PROTECTED SETTINGS</p>
-          <h2 id="settings-title">本地密钥设置</h2>
-        </div>
-      </div>
+    <section className="settings-panel" aria-label="本地密钥设置">
       <p className="library-message">{message}</p>
       <form className="library-search" onSubmit={save}>
         <select
@@ -92,7 +86,7 @@ export function SettingsPanel() {
           aria-label="输入新密钥"
           autoComplete="off"
         />
-        <button type="submit" disabled={busy || !value}>
+        <button type="submit" className="button-primary" disabled={busy || !value}>
           保存密钥
         </button>
       </form>
@@ -106,7 +100,7 @@ export function SettingsPanel() {
             {entry.configured && (
               <button
                 type="button"
-                className="secret-delete"
+                className="button-secondary secret-delete"
                 onClick={() => void remove(entry.name)}
                 disabled={busy}
               >

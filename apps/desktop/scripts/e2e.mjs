@@ -4,9 +4,7 @@ import { _electron as electron } from "playwright";
 const appDirectory = resolve(import.meta.dirname, "..");
 const executablePath = process.env["OFFICE_AGENT_EXECUTABLE"];
 const application = await electron.launch({
-  ...(executablePath
-    ? { executablePath, args: ["--disable-gpu"] }
-    : { args: [appDirectory, "--disable-gpu"] }),
+  ...(executablePath ? { executablePath } : { args: [appDirectory] }),
   cwd: appDirectory,
   env: {
     ...process.env,
@@ -17,6 +15,11 @@ const application = await electron.launch({
 try {
   const page = await application.firstWindow();
   await page.waitForSelector("h1");
+  await page.click('[data-testid="new-project"]');
+  await page.fill('[data-testid="project-name-input"]', "端到端验证项目");
+  await page.click('[data-testid="project-create-submit"]');
+  await page.waitForSelector('[data-testid="tab-editor"]');
+  await page.click('[data-testid="tab-editor"]');
   await page.waitForSelector('[data-testid="paged-editor"] canvas');
   const result = await page.evaluate(async () => {
     const info = await window.officeAgent.getAppInfo();

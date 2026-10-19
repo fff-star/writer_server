@@ -11,5 +11,7 @@ Each ADR records one significant decision. Supersede an old decision with a new 
 - [ADR 0007: Restrict research to replaceable public-web providers](0007-public-web-boundary.md)
 - [ADR 0008: Store provider secrets in encrypted local settings](0008-protected-local-settings.md)
 - [ADR 0009: Ground drafting in evidence behind an injectable writer](0009-grounded-drafting-boundary.md)
+- [ADR 0010: Conversation-first renderer shell](0010-conversation-first-shell.md) (superseded by ADR 0011)
+- [ADR 0011: Organize the renderer around projects](0011-project-centric-renderer.md)
 
 Return to the [documentation map](../README.md).

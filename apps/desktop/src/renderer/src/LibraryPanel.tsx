@@ -91,17 +91,13 @@ export function LibraryPanel() {
   };
 
   return (
-    <section className="library-panel" aria-labelledby="library-title">
-      <div className="library-heading">
-        <div>
-          <p className="eyebrow">MANAGED LIBRARY</p>
-          <h2 id="library-title">受管资料库</h2>
-        </div>
-        <button type="button" onClick={importFiles} disabled={busy}>
+    <section className="library-panel" aria-label="受管资料库">
+      <div className="panel-toolbar">
+        <p className="library-message">{message}</p>
+        <button type="button" className="button-primary" onClick={importFiles} disabled={busy}>
           导入文件
         </button>
       </div>
-      <p className="library-message">{message}</p>
       <form className="library-search" onSubmit={search}>
         <input
           value={query}
@@ -109,7 +105,7 @@ export function LibraryPanel() {
           placeholder="检索已索引内容"
           aria-label="检索已索引内容"
         />
-        <button type="submit" disabled={busy}>
+        <button type="submit" className="button-secondary" disabled={busy}>
           检索
         </button>
       </form>

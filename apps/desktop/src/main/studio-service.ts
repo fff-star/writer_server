@@ -8,6 +8,7 @@ import type {
   DraftResult,
   DraftWriter,
   LocalEvidenceProvider,
+  MessageRole,
   OfficeDocument,
   WebEvidenceProvider,
 } from "@office-agent/document";
@@ -64,6 +65,38 @@ function validateDraftRequest(input: unknown): DraftRequest {
   };
 }
 
+function validateProjectName(input: unknown): string {
+  if (typeof input !== "object" || input === null) {
+    throw new Error("Project input must be an object with a name");
+  }
+  const { name } = input as Record<string, unknown>;
+  if (typeof name !== "string" || name.trim().length === 0 || name.length > 100) {
+    throw new Error("Project name must be a string between 1 and 100 characters");
+  }
+  return name.trim();
+}
+
+function validateMessage(input: unknown): { role: MessageRole; text: string; payload?: unknown } {
+  if (typeof input !== "object" || input === null) {
+    throw new Error("Message must be an object");
+  }
+  const { role, text, payload } = input as Record<string, unknown>;
+  if (role !== "user" && role !== "agent") {
+    throw new Error("Message role must be user or agent");
+  }
+  if (typeof text !== "string" || text.length === 0 || text.length > 8000) {
+    throw new Error("Message text must be a string between 1 and 8000 characters");
+  }
+  if (payload !== undefined && payload !== null && typeof payload !== "object") {
+    throw new Error("Message payload must be an object when present");
+  }
+  return { role, text, ...(payload !== undefined ? { payload } : {}) };
+}
+
+function optionalId(value: unknown, label: string): string | undefined {
+  return value === undefined || value === null ? undefined : validateId(value, label);
+}
+
 export class StudioService {
   private constructor(
     private readonly store: DocumentVersionStore,
@@ -74,12 +107,16 @@ export class StudioService {
     return new StudioService(await DocumentVersionStore.open(root), dependencies);
   }
 
-  listDocuments() {
-    return this.store.listDocuments();
+  listDocuments(projectId?: unknown) {
+    return this.store.listDocuments(optionalId(projectId, "Project"));
   }
 
-  createDocument(input: unknown) {
-    return this.store.createDocument(officeDocumentSchema.parse(input));
+  createDocument(input: unknown, projectId?: unknown) {
+    return this.store.createDocument(
+      officeDocumentSchema.parse(input),
+      "human",
+      optionalId(projectId, "Project"),
+    );
   }
 
   getVersion(versionId: unknown) {
@@ -94,10 +131,12 @@ export class StudioService {
     return this.store.listVersions(validateId(documentId, "Document"));
   }
 
-  appendVersion(documentId: unknown, input: unknown) {
+  appendVersion(documentId: unknown, input: unknown, projectId?: unknown) {
     return this.store.appendVersion(
       validateId(documentId, "Document"),
       officeDocumentSchema.parse(input),
+      "human",
+      optionalId(projectId, "Project"),
     );
   }
 
@@ -115,6 +154,32 @@ export class StudioService {
 
   listConflicts(versionId: unknown) {
     return this.store.getConflicts(validateId(versionId, "Version"));
+  }
+
+  listProjects() {
+    return this.store.listProjects();
+  }
+
+  createProject(input: unknown) {
+    return this.store.createProject(validateProjectName(input));
+  }
+
+  renameProject(projectId: unknown, input: unknown) {
+    return this.store.renameProject(validateId(projectId, "Project"), validateProjectName(input));
+  }
+
+  listMessages(projectId: unknown) {
+    return this.store.listMessages(validateId(projectId, "Project"));
+  }
+
+  appendMessage(projectId: unknown, input: unknown) {
+    const message = validateMessage(input);
+    return this.store.appendMessage(
+      validateId(projectId, "Project"),
+      message.role,
+      message.text,
+      message.payload,
+    );
   }
 
   resolveDocument(payload: unknown): OfficeDocument {

@@ -136,9 +136,11 @@ app.whenReady().then(() => {
     const studio = await getStudioService();
     return exportDocumentPdfToFile(requireWindow(event), studio.resolveDocument(payload));
   });
-  ipcMain.handle("studio:list-documents", async () => (await getStudioService()).listDocuments());
-  ipcMain.handle("studio:create-document", async (_event, input: unknown) =>
-    (await getStudioService()).createDocument(input),
+  ipcMain.handle("studio:list-documents", async (_event, projectId?: unknown) =>
+    (await getStudioService()).listDocuments(projectId),
+  );
+  ipcMain.handle("studio:create-document", async (_event, input: unknown, projectId?: unknown) =>
+    (await getStudioService()).createDocument(input, projectId),
   );
   ipcMain.handle("studio:get-version", async (_event, versionId: unknown) =>
     (await getStudioService()).getVersion(versionId),
@@ -166,6 +168,19 @@ app.whenReady().then(() => {
   });
   ipcMain.handle("studio:draft", async (_event, request: unknown) =>
     (await getStudioService()).draft(request),
+  );
+  ipcMain.handle("projects:list", async () => (await getStudioService()).listProjects());
+  ipcMain.handle("projects:create", async (_event, input: unknown) =>
+    (await getStudioService()).createProject(input),
+  );
+  ipcMain.handle("projects:rename", async (_event, projectId: unknown, input: unknown) =>
+    (await getStudioService()).renameProject(projectId, input),
+  );
+  ipcMain.handle("conversation:list", async (_event, projectId: unknown) =>
+    (await getStudioService()).listMessages(projectId),
+  );
+  ipcMain.handle("conversation:append", async (_event, projectId: unknown, message: unknown) =>
+    (await getStudioService()).appendMessage(projectId, message),
   );
   ipcMain.handle("library:import-dialog", async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender);

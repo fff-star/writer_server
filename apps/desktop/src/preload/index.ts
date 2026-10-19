@@ -12,9 +12,10 @@ const api = {
     search: (query: string) => ipcRenderer.invoke("library:search", query) as Promise<unknown>,
   },
   studio: {
-    listDocuments: () => ipcRenderer.invoke("studio:list-documents") as Promise<unknown>,
-    createDocument: (document: unknown) =>
-      ipcRenderer.invoke("studio:create-document", document) as Promise<unknown>,
+    listDocuments: (projectId?: string) =>
+      ipcRenderer.invoke("studio:list-documents", projectId) as Promise<unknown>,
+    createDocument: (document: unknown, projectId?: string) =>
+      ipcRenderer.invoke("studio:create-document", document, projectId) as Promise<unknown>,
     getVersion: (versionId: string) =>
       ipcRenderer.invoke("studio:get-version", versionId) as Promise<unknown>,
     latestVersion: (documentId: string) =>
@@ -39,6 +40,18 @@ const api = {
   analysis: {
     analyzeBudget: (query: string) =>
       ipcRenderer.invoke("analysis:budget", query) as Promise<unknown>,
+  },
+  projects: {
+    list: () => ipcRenderer.invoke("projects:list") as Promise<unknown>,
+    create: (name: string) => ipcRenderer.invoke("projects:create", { name }) as Promise<unknown>,
+    rename: (projectId: string, name: string) =>
+      ipcRenderer.invoke("projects:rename", projectId, { name }) as Promise<unknown>,
+  },
+  conversation: {
+    list: (projectId: string) =>
+      ipcRenderer.invoke("conversation:list", projectId) as Promise<unknown>,
+    append: (projectId: string, message: unknown) =>
+      ipcRenderer.invoke("conversation:append", projectId, message) as Promise<unknown>,
   },
   settings: {
     list: () => ipcRenderer.invoke("settings:list") as Promise<unknown>,

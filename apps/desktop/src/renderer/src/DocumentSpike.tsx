@@ -37,12 +37,9 @@ export function DocumentSpike() {
   }, []);
 
   return (
-    <section className="document-spike" aria-labelledby="document-spike-title">
-      <div className="spike-heading">
-        <div>
-          <p className="eyebrow">RENDERING FEASIBILITY SPIKE</p>
-          <h2 id="document-spike-title">分页编辑验证</h2>
-        </div>
+    <section className="document-spike" aria-label="分页编辑验证">
+      <div className="panel-toolbar">
+        <p className="library-message">人工修改会实时反映在下方文本状态中。</p>
         <span className="status">{ready ? "编辑器已加载" : "正在加载"}</span>
       </div>
       <div className="canvas-editor-host" ref={container} data-testid="paged-editor" />

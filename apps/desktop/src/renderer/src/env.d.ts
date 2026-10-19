@@ -12,8 +12,8 @@ declare global {
         search: (query: string) => Promise<unknown>;
       };
       studio: {
-        listDocuments: () => Promise<unknown>;
-        createDocument: (document: unknown) => Promise<unknown>;
+        listDocuments: (projectId?: string) => Promise<unknown>;
+        createDocument: (document: unknown, projectId?: string) => Promise<unknown>;
         getVersion: (versionId: string) => Promise<unknown>;
         latestVersion: (documentId: string) => Promise<unknown>;
         listVersions: (documentId: string) => Promise<unknown>;
@@ -29,6 +29,15 @@ declare global {
       };
       analysis: {
         analyzeBudget: (query: string) => Promise<unknown>;
+      };
+      projects: {
+        list: () => Promise<unknown>;
+        create: (name: string) => Promise<unknown>;
+        rename: (projectId: string, name: string) => Promise<unknown>;
+      };
+      conversation: {
+        list: (projectId: string) => Promise<unknown>;
+        append: (projectId: string, message: unknown) => Promise<unknown>;
       };
       settings: {
         list: () => Promise<unknown>;
