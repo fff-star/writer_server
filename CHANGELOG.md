@@ -24,6 +24,9 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 - Replaceable public-web search/fetch providers with private-network protection and local cache.
 - Read-only Subagent orchestration with concurrency, step, timeout, and progress limits.
 - Electron budget evidence analysis with explicit web-provider degradation.
+- Documentation-impact CI gate mapping code areas to required documentation updates, with a `docs-impact: none` bypass marker.
+- Command freshness checks matching package.json scripts, command documentation, and CI usage.
+- ADR structure validation and immutability protection for Accepted decision records.
 
 ### Security
 

@@ -22,4 +22,6 @@ Unit tests use deterministic providers. Integration tests may use LibreOffice or
 
 All documentation is English and limited to 5,000 English words per file. Add significant design decisions to `docs/adr/` and link new documents through the documentation indexes.
 
+Code changes under `apps/`, `packages/`, `native/`, or `scripts/` must update the matching documentation in the same pull request; the `pnpm docs:impact` check enforces the mapping described in [Keep documentation in sync](docs/how-to/docs-impact.md). Changes without behavior impact may carry a standalone `docs-impact: none` line in the pull-request body or head commit message. `pnpm docs:check` also verifies command freshness and ADR structure, including immutability of Accepted ADRs.
+
 See [local verification](docs/how-to/local-verification.md) and the [Agent development workflow](docs/how-to/agent-development.md).

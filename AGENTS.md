@@ -24,4 +24,7 @@
 - Start at `docs/README.md` and read only the documents relevant to the task.
 - Update the documentation map when adding a document so the file remains reachable.
 - Follow the existing Diátaxis section: tutorial, how-to, reference, or explanation.
+- Run `docs:impact` for code changes; use a standalone `docs-impact: none` line only for genuine no-behavior changes.
+- Keep command documentation and CI commands synchronized; `docs:commands` must pass.
+- Number ADRs and keep their required structure. Accepted ADRs are immutable; supersede them with a new ADR.
 - Tests and fixtures must use synthetic or public data. Do not add confidential office documents.
