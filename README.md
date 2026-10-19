@@ -13,8 +13,15 @@ See the [documentation map](docs/README.md) for architecture, decisions, develop
 ## Next TODO
 
 - Configure a draft writer behind the drafting boundary so studio drafting becomes available, and bind the full canvas editor to the document model.
-- Complete the M4 workspace Agent; both sandbox jobs now pass their adversarial tests in CI.
+- Complete the M4 workspace Agent; both sandbox jobs now pass their adversarial tests in CI. Scoped plan for next session:
+  1. Policy broker in `packages/security` as the only gateway for workspace tool calls (path confinement via `resolveWorkspacePath`, credential-target denial, no overwrite, no delete/elevation this milestone, every decision hash-chained into the audit log).
+  2. Sandbox adapter startup self-check (probe through `runLinuxSandbox`); shell tool allowed only when the probe passes, Windows fails closed until the helper ships in the app.
+  3. Broker-gated workspace tools: list/read/create/edit-with-snapshot-rollback/shell, with adversarial tests (escapes, credential paths, overwrite, rollback restore, audit entries).
+  4. Replace the read-only throw in `SubagentOrchestrator` with a broker-required gate for write roles (e.g. `workspace-edit`).
+  5. Register tools explicitly with the isolated Pi session only when a broker is provided (default stays `noTools: "all"`); no LLM credentials exist yet, so unit-test the wiring.
+  6. Move ADR 0003 to Accepted once the broker lands, and add an ADR for the broker/tool-registration boundary.
 - Validate Windows packaging, remote branch protection, auto-merge behavior, and the manual preview-release workflow.
+- Add unit tests for conversation intent dispatch, evidence-service key resolution order, and library-service provider threading.
 
 ## Development requirements
 
