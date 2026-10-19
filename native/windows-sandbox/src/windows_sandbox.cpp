@@ -7,6 +7,8 @@
 #include <aclapi.h>
 #include <sddl.h>
 
+#include <algorithm>
+#include <cwctype>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -99,16 +101,38 @@ std::wstring environmentValue(const wchar_t* name) {
   return value;
 }
 
+// Windows documents the environment block as sorted, and AppContainer launches
+// expect the standard system variables: the previous minimal block made
+// CreateProcessW fail with ERROR_ENVVAR_NOT_FOUND on the CI runner. Keep the
+// set curated: only non-secret system values, never inherited user variables.
 std::wstring isolatedEnvironment(const std::wstring& workspace) {
-  const auto systemRoot = environmentValue(L"SystemRoot");
-  const auto comspec = environmentValue(L"ComSpec");
+  std::wstring systemRoot = environmentValue(L"SystemRoot");
+  if (systemRoot.empty()) {
+    systemRoot = L"C:\\Windows";
+  }
   std::vector<std::wstring> values = {
-      L"SystemRoot=" + systemRoot,
-      L"ComSpec=" + comspec,
+      L"ComSpec=" + environmentValue(L"ComSpec"),
       L"PATH=" + systemRoot + L"\\System32;" + systemRoot + L"\\System32\\WindowsPowerShell\\v1.0",
+      L"PATHEXT=.COM;.EXE;.BAT;.CMD",
+      L"SystemDrive=" + systemRoot.substr(0, 2),
+      L"SystemRoot=" + systemRoot,
       L"TEMP=" + workspace,
       L"TMP=" + workspace,
+      L"windir=" + systemRoot,
   };
+  values.erase(std::remove_if(values.begin(), values.end(),
+                              [](const std::wstring& value) { return value.back() == L'='; }),
+               values.end());
+  const auto upper = [](std::wstring value) {
+    for (auto& ch : value) {
+      ch = static_cast<wchar_t>(std::towupper(ch));
+    }
+    return value;
+  };
+  std::sort(values.begin(), values.end(),
+            [&](const std::wstring& left, const std::wstring& right) {
+              return upper(left) < upper(right);
+            });
   std::wstring block;
   for (const auto& value : values) {
     block.append(value);
@@ -116,6 +140,29 @@ std::wstring isolatedEnvironment(const std::wstring& workspace) {
   }
   block.push_back(L'\0');
   return block;
+}
+
+// The block is built only from the curated system values above, so dumping it
+// on failure cannot leak host secrets.
+std::string describeEnvironment(const std::wstring& block) {
+  std::string description;
+  std::wstring entry;
+  for (const wchar_t ch : block) {
+    if (ch == L'\0') {
+      if (!entry.empty()) {
+        if (!description.empty()) {
+          description += "; ";
+        }
+        for (const wchar_t unit : entry) {
+          description += unit < 128 ? static_cast<char>(unit) : '?';
+        }
+        entry.clear();
+      }
+    } else {
+      entry.push_back(ch);
+    }
+  }
+  return description;
 }
 
 void createAppContainer(Resources& resources) {
@@ -223,12 +270,14 @@ DWORD runIsolated(Resources& resources, const std::wstring& command) {
   std::vector<wchar_t> mutableCommand(command.begin(), command.end());
   mutableCommand.push_back(L'\0');
 
-  requireWin32(CreateProcessW(
-                   nullptr, mutableCommand.data(), nullptr, nullptr, TRUE,
-                   CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB | EXTENDED_STARTUPINFO_PRESENT |
-                       CREATE_UNICODE_ENVIRONMENT,
-                   environment.data(), resources.workspace.c_str(), &startup.StartupInfo, &processInfo),
-               "CreateProcessW");
+  if (!CreateProcessW(nullptr, mutableCommand.data(), nullptr, nullptr, TRUE,
+                      CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB | EXTENDED_STARTUPINFO_PRESENT |
+                          CREATE_UNICODE_ENVIRONMENT,
+                      environment.data(), resources.workspace.c_str(), &startup.StartupInfo,
+                      &processInfo)) {
+    throw std::runtime_error("CreateProcessW failed with error " + std::to_string(GetLastError()) +
+                             " using environment block: " + describeEnvironment(environment));
+  }
   resources.process = processInfo.hProcess;
   resources.thread = processInfo.hThread;
   requireWin32(AssignProcessToJobObject(resources.job, resources.process), "AssignProcessToJobObject");

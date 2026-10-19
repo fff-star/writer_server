@@ -1,6 +1,6 @@
 # Experimental Windows sandbox spike
 
-This native helper is an unverified feasibility spike, not an enabled application feature. It attempts to launch a command in an AppContainer with no declared network capabilities, a minimal environment, a Job Object that owns process-tree cleanup, and temporary workspace access. The workspace grant combines a DACL entry for the per-run AppContainer SID with a Low mandatory integrity label, because mandatory no-write-up otherwise denies AppContainer writes to an unlabeled directory; both are restored on teardown.
+This native helper is an unverified feasibility spike, not an enabled application feature. It attempts to launch a command in an AppContainer with no declared network capabilities, a curated system-variable environment, a Job Object that owns process-tree cleanup, and temporary workspace access. The workspace grant combines a DACL entry for the per-run AppContainer SID with a Low mandatory integrity label, because mandatory no-write-up otherwise denies AppContainer writes to an unlabeled directory; both are restored on teardown.
 
 Build and test only on Windows with the MSVC developer environment:
 
