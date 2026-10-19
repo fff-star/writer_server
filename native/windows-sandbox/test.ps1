@@ -42,6 +42,22 @@ function Assert-HelperHealthy {
   }
 }
 
+# Diagnostic only: a fixed no-write launch without the AppContainer attribute,
+# to tell host launch failures apart from AppContainer-specific ones. Runs from
+# finally so its output is present even when a check above failed; it never
+# affects the outcome of this script.
+function Show-ProbeLaunch {
+  try {
+    $probeOutput = & $Executable --probe-launch 2>&1 | Out-String
+    Write-Host "[probe-launch] exit code $LASTEXITCODE"
+    if ($probeOutput.Trim()) {
+      Write-Host "[probe-launch] helper output: $($probeOutput.Trim())"
+    }
+  } catch {
+    Write-Host "[probe-launch] failed to run: $($_.Exception.Message)"
+  }
+}
+
 try {
   $write = Invoke-Sandbox "cmd.exe /d /c echo ok > result.txt"
   Show-SandboxResult "workspace-write" $write
@@ -82,6 +98,7 @@ try {
   Write-Host "::error::$($_.Exception.Message)"
   exit 1
 } finally {
+  Show-ProbeLaunch
   Remove-Item Env:CANARY_SECRET -ErrorAction SilentlyContinue
   Remove-Item -Path $root -Recurse -Force -ErrorAction SilentlyContinue
 }

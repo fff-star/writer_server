@@ -102,24 +102,27 @@ std::wstring environmentValue(const wchar_t* name) {
 }
 
 // Windows documents the environment block as sorted, and AppContainer launches
-// expect the standard system variables: the previous minimal block made
-// CreateProcessW fail with ERROR_ENVVAR_NOT_FOUND on the CI runner. Keep the
-// set curated: only non-secret system values, never inherited user variables.
-std::wstring isolatedEnvironment(const std::wstring& workspace) {
+// derive a package environment on top of it: a minimal block without the
+// standard system and profile variables made CreateProcessW fail with
+// ERROR_ENVVAR_NOT_FOUND on the CI runner. Keep the set curated: only
+// non-secret system values and per-run sandbox directories, never inherited
+// user variables.
+std::vector<std::wstring> systemEnvironmentValues() {
   std::wstring systemRoot = environmentValue(L"SystemRoot");
   if (systemRoot.empty()) {
     systemRoot = L"C:\\Windows";
   }
-  std::vector<std::wstring> values = {
+  return {
       L"ComSpec=" + environmentValue(L"ComSpec"),
       L"PATH=" + systemRoot + L"\\System32;" + systemRoot + L"\\System32\\WindowsPowerShell\\v1.0",
       L"PATHEXT=.COM;.EXE;.BAT;.CMD",
       L"SystemDrive=" + systemRoot.substr(0, 2),
       L"SystemRoot=" + systemRoot,
-      L"TEMP=" + workspace,
-      L"TMP=" + workspace,
       L"windir=" + systemRoot,
   };
+}
+
+std::wstring serializeEnvironment(std::vector<std::wstring> values) {
   values.erase(std::remove_if(values.begin(), values.end(),
                               [](const std::wstring& value) { return value.back() == L'='; }),
                values.end());
@@ -140,6 +143,45 @@ std::wstring isolatedEnvironment(const std::wstring& workspace) {
   }
   block.push_back(L'\0');
   return block;
+}
+
+// The profile directories live inside the workspace so they inherit the
+// AppContainer DACL grant and Low integrity label.
+std::wstring prepareProfile(const std::wstring& workspace) {
+  const std::wstring profile = workspace + L"\\profile";
+  const std::wstring appData = profile + L"\\AppData";
+  for (const auto& path : {profile, appData, appData + L"\\Roaming", appData + L"\\Local"}) {
+    if (!CreateDirectoryW(path.c_str(), nullptr) && GetLastError() != ERROR_ALREADY_EXISTS) {
+      throw std::runtime_error("CreateDirectoryW failed with error " +
+                               std::to_string(GetLastError()));
+    }
+  }
+  return profile;
+}
+
+// Profile variables point inside the granted workspace tree so the sandboxed
+// process can actually use them; they never reference the host user profile.
+std::wstring isolatedEnvironment(const std::wstring& workspace, const std::wstring& profile) {
+  auto values = systemEnvironmentValues();
+  values.push_back(L"TEMP=" + workspace);
+  values.push_back(L"TMP=" + workspace);
+  values.push_back(L"USERPROFILE=" + profile);
+  values.push_back(L"APPDATA=" + profile + L"\\AppData\\Roaming");
+  values.push_back(L"LOCALAPPDATA=" + profile + L"\\AppData\\Local");
+  if (profile.size() > 2 && profile[1] == L':') {
+    values.push_back(L"HOMEDRIVE=" + profile.substr(0, 2));
+    values.push_back(L"HOMEPATH=" + profile.substr(2));
+  }
+  // A custom block is responsible for the per-drive current-directory entries
+  // when lpCurrentDirectory is set; the launch derives them from the block.
+  if (workspace.size() > 2 && workspace[1] == L':') {
+    values.push_back(L"=" + workspace.substr(0, 2) + L"=" + workspace);
+  }
+  return serializeEnvironment(std::move(values));
+}
+
+std::wstring probeEnvironment() {
+  return serializeEnvironment(systemEnvironmentValues());
 }
 
 // The block is built only from the curated system values above, so dumping it
@@ -266,7 +308,8 @@ DWORD runIsolated(Resources& resources, const std::wstring& command) {
   startup.StartupInfo.cb = sizeof(startup);
   startup.lpAttributeList = resources.attributes;
   PROCESS_INFORMATION processInfo = {};
-  auto environment = isolatedEnvironment(resources.workspace);
+  const auto profile = prepareProfile(resources.workspace);
+  auto environment = isolatedEnvironment(resources.workspace, profile);
   std::vector<wchar_t> mutableCommand(command.begin(), command.end());
   mutableCommand.push_back(L'\0');
 
@@ -288,11 +331,49 @@ DWORD runIsolated(Resources& resources, const std::wstring& command) {
   requireWin32(GetExitCodeProcess(resources.process, &exitCode), "GetExitCodeProcess");
   return exitCode;
 }
+
+// Diagnostic only: launch a fixed no-write command without the AppContainer
+// attribute to distinguish host launch failures from AppContainer-specific
+// ones. The command is hardcoded and never comes from caller input.
+DWORD probeLaunch() {
+  auto environment = probeEnvironment();
+  std::wstring command = L"cmd.exe /d /c cd";
+  std::vector<wchar_t> mutableCommand(command.begin(), command.end());
+  mutableCommand.push_back(L'\0');
+  STARTUPINFOW startup = {};
+  startup.cb = sizeof(startup);
+  PROCESS_INFORMATION processInfo = {};
+  if (!CreateProcessW(nullptr, mutableCommand.data(), nullptr, nullptr, FALSE,
+                      CREATE_UNICODE_ENVIRONMENT, environment.data(), nullptr, &startup,
+                      &processInfo)) {
+    throw std::runtime_error("probe CreateProcessW failed with error " +
+                             std::to_string(GetLastError()) +
+                             " using environment block: " + describeEnvironment(environment));
+  }
+  requireWin32(WaitForSingleObject(processInfo.hProcess, INFINITE) != WAIT_FAILED,
+               "WaitForSingleObject");
+  DWORD exitCode = 1;
+  requireWin32(GetExitCodeProcess(processInfo.hProcess, &exitCode), "GetExitCodeProcess");
+  CloseHandle(processInfo.hThread);
+  CloseHandle(processInfo.hProcess);
+  return exitCode;
+}
 }  // namespace
 
 int wmain(int argc, wchar_t** argv) {
+  if (argc == 2 && std::wstring(argv[1]) == L"--probe-launch") {
+    try {
+      const DWORD code = probeLaunch();
+      std::cerr << "probe launch: child exit code " << code << '\n';
+      return static_cast<int>(code);
+    } catch (const std::exception& error) {
+      std::cerr << error.what() << '\n';
+      return 1;
+    }
+  }
   if (argc != 5 || std::wstring(argv[1]) != L"--workspace" || std::wstring(argv[3]) != L"--command") {
-    std::wcerr << L"Usage: windows-sandbox --workspace <path> --command <command line>\n";
+    std::wcerr << L"Usage: windows-sandbox --workspace <path> --command <command line>\n"
+                  L"       windows-sandbox --probe-launch\n";
     return 64;
   }
 
