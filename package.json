@@ -1,0 +1,48 @@
+{
+  "name": "office-agent",
+  "version": "0.1.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fff-star/writer_server.git"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "pnpm --recursive --if-present build",
+    "ci:check": "node scripts/check-workflows.mjs",
+    "dev": "pnpm --filter @office-agent/desktop dev",
+    "docs:check": "markdownlint-cli2 && node scripts/check-docs.mjs",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "package": "pnpm --filter @office-agent/desktop package",
+    "package:linux:binary": "node scripts/clean-release.mjs && pnpm --filter @office-agent/desktop package:linux:portable && node scripts/package-linux-portable.mjs && node scripts/hash-artifacts.mjs release",
+    "test": "vitest run --config vitest.config.mts",
+    "test:e2e": "pnpm --filter @office-agent/desktop test:e2e",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "typecheck": "pnpm --recursive --if-present typecheck"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.13.0",
+    "markdownlint-cli2": "0.23.3",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5",
+    "yaml": "2.9.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  }
+}

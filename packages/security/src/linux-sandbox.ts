@@ -1,0 +1,95 @@
+import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+export type LinuxSandboxRequest = {
+  workspace: string;
+  command: string;
+  args?: string[];
+  environment?: Record<string, string>;
+  timeoutMs?: number;
+};
+
+export type LinuxSandboxResult = {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+};
+
+function sandboxArguments(request: LinuxSandboxRequest): string[] {
+  const args = [
+    "--die-with-parent",
+    "--new-session",
+    "--unshare-all",
+    "--cap-drop",
+    "ALL",
+    "--clearenv",
+  ];
+  for (const path of ["/usr", "/lib", "/lib64", "/bin", "/sbin"]) {
+    if (existsSync(path)) {
+      args.push("--ro-bind", path, path);
+    }
+  }
+  args.push(
+    "--dev",
+    "/dev",
+    "--proc",
+    "/proc",
+    "--tmpfs",
+    "/tmp",
+    "--dir",
+    "/workspace",
+    "--bind",
+    resolve(request.workspace),
+    "/workspace",
+    "--chdir",
+    "/workspace",
+    "--setenv",
+    "PATH",
+    "/usr/bin:/bin",
+    "--setenv",
+    "HOME",
+    "/tmp",
+    "--",
+    request.command,
+    ...(request.args ?? []),
+  );
+  return args;
+}
+
+export async function runLinuxSandbox(request: LinuxSandboxRequest): Promise<LinuxSandboxResult> {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn("bwrap", sandboxArguments(request), {
+      env: request.environment ?? {},
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, request.timeoutMs ?? 5000);
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      if (stdout.length < 1_000_000) {
+        stdout += chunk.toString("utf8");
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      if (stderr.length < 1_000_000) {
+        stderr += chunk.toString("utf8");
+      }
+    });
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on("close", (code, signal) => {
+      clearTimeout(timeout);
+      resolvePromise({ code, signal, stdout, stderr, timedOut });
+    });
+  });
+}

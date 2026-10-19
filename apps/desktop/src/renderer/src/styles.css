@@ -1,0 +1,140 @@
+:root {
+  color: #17231d;
+  background: #f2f0e9;
+  font-family: "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 960px;
+  min-height: 100vh;
+}
+
+.shell {
+  width: min(1180px, calc(100% - 80px));
+  margin: 0 auto;
+  padding: 72px 0 32px;
+}
+
+.hero {
+  max-width: 900px;
+  padding-bottom: 48px;
+}
+
+.eyebrow {
+  color: #3d644e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+h1 {
+  max-width: 850px;
+  margin: 18px 0;
+  font-family: "Noto Serif CJK SC", "Songti SC", serif;
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: -0.035em;
+}
+
+.intro {
+  max-width: 650px;
+  color: #59635d;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid #b8beb8;
+  border-bottom: 1px solid #b8beb8;
+}
+
+.module {
+  min-height: 260px;
+  padding: 28px;
+  border-right: 1px solid #b8beb8;
+}
+
+.module:last-child {
+  border-right: 0;
+}
+
+.module-number {
+  color: #7b867f;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.module h2 {
+  margin: 42px 0 14px;
+  font-size: 23px;
+}
+
+.module p {
+  min-height: 78px;
+  color: #59635d;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.status {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 5px 9px;
+  color: #6c562c;
+  background: #e7dcc1;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.document-spike {
+  margin-top: 56px;
+}
+
+.spike-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.spike-heading h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.canvas-editor-host {
+  height: 620px;
+  overflow: auto;
+  background: #d9ddd9;
+  border: 1px solid #b8beb8;
+}
+
+.document-text-state {
+  margin-top: 12px;
+  color: #59635d;
+  font-size: 12px;
+}
+
+.document-text-state pre {
+  max-height: 120px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 24px;
+  color: #6f7872;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}

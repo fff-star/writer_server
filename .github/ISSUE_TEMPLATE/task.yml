@@ -1,0 +1,24 @@
+name: Agent-ready task
+description: Define a verifiable implementation task
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User outcome
+      description: What must work end to end?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: List observable results and required automated tests.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Boundaries
+      description: List non-goals, security effects, data effects, and documentation affected.
+    validations:
+      required: true

@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a reproducible defect with synthetic data
+body:
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include versions, platforms, commands, and a synthetic fixture. Remove secrets and confidential documents.
+    validations:
+      required: true

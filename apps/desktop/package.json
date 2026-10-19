@@ -1,0 +1,44 @@
+{
+  "name": "@office-agent/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first office agent",
+  "author": {
+    "name": "Office Agent contributors",
+    "email": "office-agent@example.com"
+  },
+  "homepage": "https://github.com/fff-star/writer_server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fff-star/writer_server.git"
+  },
+  "desktopName": "office-agent.desktop",
+  "type": "commonjs",
+  "main": "out/main/index.js",
+  "scripts": {
+    "build": "electron-vite build",
+    "dev": "electron-vite dev",
+    "package": "electron-vite build && electron-builder",
+    "package:linux:portable": "electron-vite build && electron-builder --linux AppImage",
+    "test:e2e": "electron-vite build && node scripts/e2e.mjs",
+    "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "@hufe921/canvas-editor": "1.0.5",
+    "@office-agent/document": "workspace:*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3",
+    "electron-vite": "6.0.0",
+    "playwright": "1.64.1",
+    "vite": "8.3.4"
+  }
+}
