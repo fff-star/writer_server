@@ -8,6 +8,14 @@ The repository has completed the foundation, managed-library, and evidence-analy
 
 See the [documentation map](docs/README.md) for architecture, decisions, development workflows, and current capability boundaries.
 
+## Next TODO
+
+- Watch the latest GitHub Actions run and fix the remaining Linux/Windows sandbox failures using the annotated CI diagnostics.
+- Complete the M3 document studio: grounded Chinese drafting, editable citations, versioned manual edits, and DOCX/PDF export.
+- Complete the M4 workspace Agent only after the Windows and Linux sandboxes pass their adversarial tests.
+- Validate Windows packaging, remote branch protection, auto-merge behavior, and the manual preview-release workflow.
+- Add configured OCR/visual providers and move provider keys from development environment variables to protected local settings.
+
 ## Development requirements
 
 - Node.js 24
