@@ -49,12 +49,16 @@ function Assert-HelperHealthy {
 function Show-ProbeLaunch {
   try {
     $probeOutput = & $Executable --probe-launch 2>&1 | Out-String
-    Write-Host "[probe-launch] exit code $LASTEXITCODE"
+    $probeExit = $LASTEXITCODE
+    Write-Host "[probe-launch] exit code $probeExit"
     if ($probeOutput.Trim()) {
       Write-Host "[probe-launch] helper output: $($probeOutput.Trim())"
     }
+    # Annotations are readable without CI log access; keep the verdict there too.
+    Write-Host "::warning::probe-launch exit=$probeExit (0 means a plain non-AppContainer launch works on this runner)"
   } catch {
     Write-Host "[probe-launch] failed to run: $($_.Exception.Message)"
+    Write-Host "::warning::probe-launch failed to run"
   }
 }
 

@@ -287,6 +287,57 @@ void createJob(Resources& resources) {
                "SetInformationJobObject");
 }
 
+// A runner that places this process in a job without JOB_OBJECT_LIMIT_BREAKAWAY_OK
+// makes CreateProcessW fail with ERROR_ACCESS_DENIED when the breakaway flag is
+// passed, so only request breakaway when the enclosing job grants it. A silent
+// breakaway job needs no flag, and for a restrictive job the caller retries with
+// the flag as a last resort.
+DWORD breakawayFlag() {
+  BOOL inJob = FALSE;
+  if (!IsProcessInJob(GetCurrentProcess(), nullptr, &inJob) || !inJob) {
+    return 0;
+  }
+  JOBOBJECT_BASIC_LIMIT_INFORMATION limits = {};
+  if (!QueryInformationJobObject(nullptr, JobObjectBasicLimitInformation, &limits, sizeof(limits),
+                                 nullptr)) {
+    return 0;
+  }
+  if (limits.LimitFlags & JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK) {
+    return 0;
+  }
+  if (limits.LimitFlags & JOB_OBJECT_LIMIT_BREAKAWAY_OK) {
+    return CREATE_BREAKAWAY_FROM_JOB;
+  }
+  return 0;
+}
+
+void launchSuspended(Resources& resources, STARTUPINFOEXW& startup, std::wstring& environment,
+                     const std::wstring& command, DWORD creationFlags) {
+  std::vector<wchar_t> mutableCommand(command.begin(), command.end());
+  mutableCommand.push_back(L'\0');
+  PROCESS_INFORMATION processInfo = {};
+  if (!CreateProcessW(nullptr, mutableCommand.data(), nullptr, nullptr, TRUE, creationFlags,
+                      environment.data(), resources.workspace.c_str(), &startup.StartupInfo,
+                      &processInfo)) {
+    throw std::runtime_error("CreateProcessW failed with error " + std::to_string(GetLastError()) +
+                             " using environment block: " + describeEnvironment(environment));
+  }
+  resources.process = processInfo.hProcess;
+  resources.thread = processInfo.hThread;
+}
+
+void terminateSuspended(Resources& resources) {
+  if (resources.process) {
+    TerminateProcess(resources.process, 1);
+    CloseHandle(resources.process);
+    resources.process = nullptr;
+  }
+  if (resources.thread) {
+    CloseHandle(resources.thread);
+    resources.thread = nullptr;
+  }
+}
+
 DWORD runIsolated(Resources& resources, const std::wstring& command) {
   SECURITY_CAPABILITIES capabilities = {};
   capabilities.AppContainerSid = resources.appContainerSid;
@@ -307,23 +358,35 @@ DWORD runIsolated(Resources& resources, const std::wstring& command) {
   STARTUPINFOEXW startup = {};
   startup.StartupInfo.cb = sizeof(startup);
   startup.lpAttributeList = resources.attributes;
-  PROCESS_INFORMATION processInfo = {};
   const auto profile = prepareProfile(resources.workspace);
   auto environment = isolatedEnvironment(resources.workspace, profile);
-  std::vector<wchar_t> mutableCommand(command.begin(), command.end());
-  mutableCommand.push_back(L'\0');
 
-  if (!CreateProcessW(nullptr, mutableCommand.data(), nullptr, nullptr, TRUE,
-                      CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB | EXTENDED_STARTUPINFO_PRESENT |
-                          CREATE_UNICODE_ENVIRONMENT,
-                      environment.data(), resources.workspace.c_str(), &startup.StartupInfo,
-                      &processInfo)) {
-    throw std::runtime_error("CreateProcessW failed with error " + std::to_string(GetLastError()) +
-                             " using environment block: " + describeEnvironment(environment));
+  const DWORD baseFlags = CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT;
+  const DWORD launchFlags = baseFlags | breakawayFlag();
+  launchSuspended(resources, startup, environment, command, launchFlags);
+  if (!AssignProcessToJobObject(resources.job, resources.process)) {
+    const DWORD firstError = GetLastError();
+    terminateSuspended(resources);
+    if (launchFlags & CREATE_BREAKAWAY_FROM_JOB) {
+      throw std::runtime_error("AssignProcessToJobObject failed with error " +
+                               std::to_string(firstError));
+    }
+    try {
+      launchSuspended(resources, startup, environment, command,
+                      baseFlags | CREATE_BREAKAWAY_FROM_JOB);
+    } catch (const std::exception& error) {
+      throw std::runtime_error("AssignProcessToJobObject failed with error " +
+                               std::to_string(firstError) +
+                               "; breakaway relaunch also failed: " + error.what());
+    }
+    if (!AssignProcessToJobObject(resources.job, resources.process)) {
+      const DWORD secondError = GetLastError();
+      terminateSuspended(resources);
+      throw std::runtime_error("AssignProcessToJobObject failed with error " +
+                               std::to_string(firstError) + " without breakaway and " +
+                               std::to_string(secondError) + " with breakaway");
+    }
   }
-  resources.process = processInfo.hProcess;
-  resources.thread = processInfo.hThread;
-  requireWin32(AssignProcessToJobObject(resources.job, resources.process), "AssignProcessToJobObject");
   requireWin32(ResumeThread(resources.thread) != static_cast<DWORD>(-1), "ResumeThread");
   requireWin32(WaitForSingleObject(resources.process, INFINITE) != WAIT_FAILED, "WaitForSingleObject");
 
