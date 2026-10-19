@@ -61,7 +61,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Build sandbox helper
         working-directory: native/windows-sandbox
-        run: .\build.cmd
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call build.cmd
       - name: Test sandbox helper
         working-directory: native/windows-sandbox
         shell: pwsh
