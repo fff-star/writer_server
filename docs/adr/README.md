@@ -6,5 +6,6 @@ Each ADR records one significant decision. Supersede an old decision with a new 
 - [ADR 0002: Use immutable local source snapshots](0002-local-first-storage.md)
 - [ADR 0003: Require an operating-system security boundary](0003-security-boundary.md)
 - [ADR 0004: Use one canonical document model for editing and export](0004-document-model.md)
+- [ADR 0005: Use node:sqlite and staged locators for managed library metadata](0005-library-index-storage.md)
 
 Return to the [documentation map](../README.md).

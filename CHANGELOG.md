@@ -15,6 +15,10 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 - Canonical document model, DOCX export, Electron PDF export, and paginated editing spikes.
 - CI, unsigned preview packaging, artifact checksums, and manual release workflows.
 - Self-extracting Linux executable for machines without FUSE, with packaged end-to-end verification.
+- Immutable managed-library snapshots, deduplication, source versions, and SQLite metadata.
+- TXT, Markdown, CSV, XLSX, DOC, DOCX, and text-PDF extraction with staged locators.
+- Chinese search, Electron import/list/search IPC, and a managed-library interface.
+- A 500-file synthetic ingestion and indexing acceptance test.
 
 ### Security
 

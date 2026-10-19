@@ -3,7 +3,16 @@ import { defineConfig, externalizeDepsPlugin } from "electron-vite";
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ["@office-agent/document"] })],
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: [
+          "@office-agent/contracts",
+          "@office-agent/document",
+          "@office-agent/ingestion",
+          "@office-agent/library",
+        ],
+      }),
+    ],
     build: {
       rollupOptions: {
         output: {

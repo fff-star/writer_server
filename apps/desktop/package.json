@@ -25,7 +25,10 @@
   },
   "dependencies": {
     "@hufe921/canvas-editor": "1.0.5",
+    "@office-agent/contracts": "workspace:*",
     "@office-agent/document": "workspace:*",
+    "@office-agent/ingestion": "workspace:*",
+    "@office-agent/library": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

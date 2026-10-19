@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { extractDocxText } from "../../packages/ingestion/src/docx.js";
+import { extractDocument } from "../../packages/ingestion/src/extract.js";
 import {
   convertLegacyDoc,
   convertWithLibreOffice,
@@ -47,5 +48,9 @@ describe("legacy DOC conversion", () => {
     const signature = await readFile(pdf.outputPath);
     expect(signature.subarray(0, 5).toString("ascii")).toBe("%PDF-");
     expect(pdf.originalSha256).toBe(legacyHash);
+
+    const result = await extractDocument(legacy.outputPath, root);
+    expect(result.status).toBe("indexed");
+    expect(result.blocks.map((block) => block.text).join("\n")).toContain("季度预算汇总");
   }, 60_000);
 });

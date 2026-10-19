@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { exportDocumentPdf } from "./document-exporter";
+import { LibraryService } from "./library-service";
 import { join } from "node:path";
 
 app.enableSandbox();
@@ -44,6 +45,16 @@ const createWindow = (): BrowserWindow => {
   return window;
 };
 
+let libraryServicePromise: Promise<LibraryService> | undefined;
+
+function getLibraryService(): Promise<LibraryService> {
+  libraryServicePromise ??= LibraryService.create(
+    join(app.getPath("userData"), "library"),
+    join(app.getPath("temp"), "office-agent-ingestion"),
+  );
+  return libraryServicePromise;
+}
+
 app.whenReady().then(() => {
   ipcMain.handle("app:get-info", () => ({
     name: "Office Agent",
@@ -52,6 +63,20 @@ app.whenReady().then(() => {
     stage: "foundation",
   }));
   ipcMain.handle("document:export-pdf", (_event, input: unknown) => exportDocumentPdf(input));
+  ipcMain.handle("library:import-dialog", async (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (!window) {
+      throw new Error("Library import requires an application window");
+    }
+    return (await getLibraryService()).importWithDialog(window);
+  });
+  ipcMain.handle("library:list", async () => (await getLibraryService()).listSnapshots());
+  ipcMain.handle("library:search", async (_event, query: unknown) => {
+    if (typeof query !== "string" || query.length === 0 || query.length > 500) {
+      throw new Error("Library search requires a query between 1 and 500 characters");
+    }
+    return (await getLibraryService()).search(query);
+  });
 
   createWindow();
   app.on("activate", () => {
@@ -59,6 +84,12 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+app.on("before-quit", () => {
+  if (libraryServicePromise) {
+    void libraryServicePromise.then((service) => service.close());
+  }
 });
 
 app.on("window-all-closed", () => {

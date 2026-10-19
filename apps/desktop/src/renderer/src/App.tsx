@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DocumentSpike } from "./DocumentSpike";
+import { LibraryPanel } from "./LibraryPanel";
 
 type AppInfo = {
   name: string;
@@ -11,15 +12,18 @@ type AppInfo = {
 const modules = [
   {
     title: "资料库",
-    description: "不可变文件快照、内容提取与来源定位将在资料库里程碑启用。",
+    description: "支持不可变文件快照、基础内容提取、中文检索和来源定位。",
+    status: "基础版已启用",
   },
   {
     title: "研究与写作",
     description: "本地资料与公开网页将在这里汇总为带引用的中文材料。",
+    status: "尚未启用",
   },
   {
     title: "工作区 Agent",
     description: "文件和脚本工具仅在安全边界通过验证后开放。",
+    status: "尚未启用",
   },
 ];
 
@@ -43,10 +47,11 @@ export function App() {
             <span className="module-number">0{index + 1}</span>
             <h2>{module.title}</h2>
             <p>{module.description}</p>
-            <span className="status">尚未启用</span>
+            <span className="status">{module.status}</span>
           </article>
         ))}
       </section>
+      <LibraryPanel />
       <DocumentSpike />
       <footer>
         <span>{info ? `${info.name} ${info.version}` : "正在读取应用信息"}</span>

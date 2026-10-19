@@ -26,9 +26,11 @@ try {
       style: "standard",
       blocks: [{ type: "paragraph", id: "p", text: "中文 PDF 导出验证" }],
     });
+    const librarySnapshots = await window.officeAgent.library.list();
     return {
       info,
       pdfBase64,
+      librarySnapshots,
       requireType: typeof window.require,
       processType: typeof window.process,
       moduleType: typeof window.module,
@@ -47,6 +49,9 @@ try {
   }
   if (!result.pdfBase64.startsWith("JVBER")) {
     throw new Error("PDF export did not return a PDF document");
+  }
+  if (!Array.isArray(result.librarySnapshots)) {
+    throw new Error("Library IPC did not return a snapshot list");
   }
 
   const canvas = page.locator('[data-testid="paged-editor"] canvas').first();

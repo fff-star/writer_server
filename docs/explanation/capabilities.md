@@ -2,7 +2,7 @@
 
 ## Foundation state
 
-The current shell demonstrates application startup, renderer isolation, and creation of an isolated Pi session without tools. Foundation spikes also exercise Linux process isolation, workspace rollback, real DOC conversion, DOCX/PDF generation, and manual editing in a paginated canvas. These checks do not enable managed document import, retrieval, web research, writing, export, file organization, or Agent shell execution.
+The current application demonstrates startup, renderer isolation, an isolated Pi session without tools, immutable managed-library imports, basic extraction, Chinese search, and source locators. Foundation spikes also exercise Linux process isolation, workspace rollback, real DOC conversion, DOCX/PDF generation, and paginated editing. These checks do not enable semantic retrieval, OCR/visual indexing, web research, Agent writing, file organization, or Agent shell execution.
 
 ## Intended first usable scope
 
