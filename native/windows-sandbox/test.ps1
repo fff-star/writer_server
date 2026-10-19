@@ -40,6 +40,9 @@ try {
   }
 
   Write-Output '{"ok":true,"platform":"win32","network":false}'
+} catch {
+  Write-Host "::error::$($_.Exception.Message)"
+  exit 1
 } finally {
   Remove-Item Env:CANARY_SECRET -ErrorAction SilentlyContinue
   Remove-Item -Path $root -Recurse -Force -ErrorAction SilentlyContinue
