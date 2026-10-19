@@ -1,7 +1,9 @@
 # Tutorials
 
-Tutorials will provide guided exercises with synthetic data. No tutorial is published yet because the corresponding user workflows have not passed their acceptance tests.
+Tutorials provide guided exercises with synthetic or empty local data. A tutorial must never present a planned capability as an available one.
 
-Planned initial tutorials cover importing a small source library, producing a cited research draft, editing and exporting a document, and running a reversible workspace task. A tutorial must never present a planned capability as an available one.
+- [Edit and export a studio document](studio-document.md): create, edit, version, and export a document in the studio panel.
+
+Planned tutorials also cover importing a small source library, producing a cited research draft (blocked until a draft writer is configured), and running a reversible workspace task.
 
 Return to the [documentation map](../README.md).

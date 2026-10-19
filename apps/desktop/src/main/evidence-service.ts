@@ -15,6 +15,8 @@ import {
   type ResearchCollection,
 } from "@office-agent/research";
 import type { LibraryService } from "./library-service";
+import { EncryptionUnavailableError } from "./secret-store";
+import type { SettingsService } from "./settings-service";
 
 export type WebEvidence =
   { available: true; collection: ResearchCollection } | { available: false; reason: string };
@@ -36,8 +38,20 @@ export class EvidenceService {
     private readonly research: ResearchResources | null,
   ) {}
 
-  static async create(library: LibraryService, userDataRoot: string): Promise<EvidenceService> {
-    const apiKey = process.env["BRAVE_SEARCH_API_KEY"];
+  static async create(
+    library: LibraryService,
+    userDataRoot: string,
+    settings?: SettingsService,
+  ): Promise<EvidenceService> {
+    let storedKey: string | null = null;
+    try {
+      storedKey = (await settings?.getSecret("brave-search-api-key")) ?? null;
+    } catch (error) {
+      if (!(error instanceof EncryptionUnavailableError)) {
+        throw error;
+      }
+    }
+    const apiKey = storedKey ?? process.env["BRAVE_SEARCH_API_KEY"];
     if (!apiKey) {
       return new EvidenceService(library, null);
     }
@@ -99,6 +113,17 @@ export class EvidenceService {
       web: webResult.output as WebEvidence,
       subagents: results.flatMap((result) => result.events),
     };
+  }
+
+  hasResearch(): boolean {
+    return this.research !== null;
+  }
+
+  async collectResearch(query: string, limit = 5): Promise<ResearchCollection> {
+    if (!this.research) {
+      throw new Error("BRAVE_SEARCH_API_KEY is not configured");
+    }
+    return this.research.service.collect(query, limit);
   }
 
   close(): void {

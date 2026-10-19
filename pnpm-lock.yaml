@@ -167,6 +167,9 @@ importers:
 
   packages/document:
     dependencies:
+      '@office-agent/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       docx:
         specifier: 9.12.0
         version: 9.12.0
@@ -195,6 +198,9 @@ importers:
       pdfjs-dist:
         specifier: 6.4.299
         version: 6.4.299
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 24.19.2

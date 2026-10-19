@@ -2,7 +2,11 @@
 
 ## Foundation state
 
-The current application demonstrates startup, renderer isolation, an isolated Pi session without tools, immutable managed-library imports, extraction, Chinese search, source locators, deterministic budget analysis, optional public-web collection, and read-only Subagent orchestration. Foundation spikes also exercise Linux process isolation, workspace rollback, real DOC conversion, DOCX/PDF generation, and paginated editing. These checks do not enable production semantic retrieval, OCR/visual indexing, Agent writing, file organization, or Agent shell execution.
+The current application demonstrates startup, renderer isolation, an isolated Pi session without tools, immutable managed-library imports, extraction, Chinese search, source locators, deterministic budget analysis, optional public-web collection, and read-only Subagent orchestration. Foundation spikes also exercise Linux process isolation, workspace rollback, real DOC conversion, DOCX/PDF generation, and paginated editing.
+
+The document studio is present: structured block editing of the canonical document model, editable citations with a library-search locator picker, versioned manual edits stored in a local SQLite version store, agent-revision merges that surface per-block conflicts, and DOCX/PDF export through native save dialogs. Grounded Chinese drafting is wired end-to-end from evidence assembly to validated document output, but it reports an explicit unavailable reason in this build because no draft writer (LLM credentials) is configured; see [ADR 0009](../adr/0009-grounded-drafting-boundary.md).
+
+OCR and visual indexing work when providers are configured: API keys live in the protected settings store and endpoints come from main-process environment variables. Without providers, images and scanned PDFs keep explicit `partial` stub records rather than silent gaps. Scanned-PDF OCR additionally needs a page rasterizer, and none is shipped yet. Agent shell execution, file organization, and production semantic retrieval remain disabled.
 
 ## Intended first usable scope
 

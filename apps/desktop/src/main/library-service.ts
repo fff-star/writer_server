@@ -5,6 +5,7 @@ import type {
   LibrarySnapshotSummary,
 } from "@office-agent/contracts";
 import { extractDocument } from "@office-agent/ingestion";
+import type { ExtractionOptions } from "@office-agent/ingestion";
 import { LibraryStore } from "@office-agent/library";
 import type { LibrarySnapshot, StoredBlock } from "@office-agent/library";
 import { dialog, type BrowserWindow } from "electron";
@@ -40,15 +41,26 @@ function summary(snapshot: LibrarySnapshot): LibrarySnapshotSummary {
   };
 }
 
+export type ExtractionOptionsResolver = () => Promise<ExtractionOptions>;
+
 export class LibraryService {
   private constructor(
     private readonly store: LibraryStore,
     private readonly temporaryDirectory: string,
+    private readonly resolveExtractionOptions: ExtractionOptionsResolver,
   ) {}
 
-  static async create(libraryRoot: string, temporaryDirectory: string): Promise<LibraryService> {
+  static async create(
+    libraryRoot: string,
+    temporaryDirectory: string,
+    resolveExtractionOptions: ExtractionOptionsResolver = () => Promise.resolve({}),
+  ): Promise<LibraryService> {
     await mkdir(temporaryDirectory, { recursive: true });
-    return new LibraryService(await LibraryStore.open(libraryRoot), temporaryDirectory);
+    return new LibraryService(
+      await LibraryStore.open(libraryRoot),
+      temporaryDirectory,
+      resolveExtractionOptions,
+    );
   }
 
   async importWithDialog(window: BrowserWindow): Promise<LibraryImportSummary> {
@@ -73,6 +85,7 @@ export class LibraryService {
       failed: 0,
       snapshots: [],
     };
+    const extractionOptions = await this.resolveExtractionOptions();
     for (const path of paths) {
       try {
         const imported = await this.store.importFile(path);
@@ -80,6 +93,7 @@ export class LibraryService {
           imported.objectPath,
           this.temporaryDirectory,
           imported.snapshot.extension,
+          extractionOptions,
         );
         this.store.recordBlocks(
           imported.snapshot.id,

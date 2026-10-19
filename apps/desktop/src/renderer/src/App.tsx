@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { BudgetPanel } from "./BudgetPanel";
 import { DocumentSpike } from "./DocumentSpike";
 import { LibraryPanel } from "./LibraryPanel";
+import { SettingsPanel } from "./SettingsPanel";
+import { StudioPanel } from "./StudioPanel";
 
 type AppInfo = {
   name: string;
@@ -19,7 +21,7 @@ const modules = [
   {
     title: "研究与写作",
     description: "本地资料与公开网页将在这里汇总为带引用的中文材料。",
-    status: "尚未启用",
+    status: "文档工作台已启用（自动起草待配置模型）",
   },
   {
     title: "工作区 Agent",
@@ -54,6 +56,8 @@ export function App() {
       </section>
       <LibraryPanel />
       <BudgetPanel />
+      <SettingsPanel />
+      <StudioPanel />
       <DocumentSpike />
       <footer>
         <span>{info ? `${info.name} ${info.version}` : "正在读取应用信息"}</span>

@@ -20,6 +20,7 @@
     "dev": "electron-vite dev",
     "package": "electron-vite build && electron-builder",
     "package:linux:portable": "electron-vite build && electron-builder --linux AppImage",
+    "test": "vitest run --config vitest.config.mts",
     "test:e2e": "electron-vite build && node scripts/e2e.mjs",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
   },

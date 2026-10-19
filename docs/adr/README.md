@@ -9,5 +9,7 @@ Each ADR records one significant decision. Supersede an old decision with a new 
 - [ADR 0005: Use node:sqlite and staged locators for managed library metadata](0005-library-index-storage.md)
 - [ADR 0006: Use deterministic analysis inside read-only Subagent tasks](0006-deterministic-subagent-analysis.md)
 - [ADR 0007: Restrict research to replaceable public-web providers](0007-public-web-boundary.md)
+- [ADR 0008: Store provider secrets in encrypted local settings](0008-protected-local-settings.md)
+- [ADR 0009: Ground drafting in evidence behind an injectable writer](0009-grounded-drafting-boundary.md)
 
 Return to the [documentation map](../README.md).

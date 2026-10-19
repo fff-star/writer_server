@@ -212,6 +212,32 @@ h1 {
   margin-top: 56px;
 }
 
+.settings-panel {
+  margin-top: 56px;
+}
+
+.settings-panel select {
+  padding: 10px 12px;
+  border: 1px solid #b8beb8;
+  border-radius: 3px;
+  background: #faf9f5;
+}
+
+.secret-delete {
+  margin-top: 8px;
+  padding: 6px 14px;
+  color: #f8f7f2;
+  background: #6b3a32;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.secret-delete:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .web-status {
   display: grid;
   gap: 6px;
@@ -224,6 +250,143 @@ h1 {
 
 .web-status strong {
   color: #243f32;
+}
+
+.studio-panel {
+  margin-top: 56px;
+}
+
+.studio-doc {
+  cursor: pointer;
+}
+
+.studio-doc[data-selected="true"] {
+  background: #efe9d8;
+  border-left-color: #6c562c;
+}
+
+.studio-editor {
+  margin-top: 24px;
+}
+
+.studio-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.studio-toolbar button {
+  padding: 8px 14px;
+  color: #f8f7f2;
+  background: #243f32;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.studio-toolbar button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.studio-blocks {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.studio-block {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #e9e6dc;
+  border-left: 3px solid #3d644e;
+}
+
+.studio-block textarea,
+.studio-block input,
+.studio-block select {
+  padding: 8px 10px;
+  border: 1px solid #b8beb8;
+  border-radius: 3px;
+  background: #faf9f5;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.studio-block textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.studio-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #59635d;
+  font-size: 12px;
+}
+
+.studio-block-head button {
+  padding: 4px 10px;
+  color: #f8f7f2;
+  background: #6b3a32;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.studio-inline-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #59635d;
+  font-size: 13px;
+}
+
+.studio-citation-source {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 8px;
+}
+
+.citation-picker {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: #dfdcd2;
+}
+
+.citation-picker .library-search {
+  margin: 0;
+}
+
+.citation-picker-results {
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.citation-picker-results article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #faf9f5;
+  font-size: 12px;
+}
+
+.citation-picker-results button {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  color: #f8f7f2;
+  background: #243f32;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
 footer {
