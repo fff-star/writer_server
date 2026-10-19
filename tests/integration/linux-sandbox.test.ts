@@ -23,14 +23,21 @@ afterEach(async () => {
 
 linux("Linux bubblewrap boundary", () => {
   it("allows workspace writes and strips inherited secrets", async () => {
-    const result = await runLinuxSandbox({
+    const write = await runLinuxSandbox({
       workspace,
       command: "/bin/bash",
-      args: ["-c", 'printf ok > /workspace/result.txt && test -z "$CANARY_SECRET"'],
+      args: ["-c", "printf ok > /workspace/result.txt"],
     });
-    expect(result.stderr).toBe("");
-    expect(result.code).toBe(0);
+    expect(write).toMatchObject({ code: 0, stderr: "" });
     expect(existsSync(join(workspace, "result.txt"))).toBe(true);
+
+    const environment = await runLinuxSandbox({
+      workspace,
+      command: "/bin/bash",
+      args: ["-c", 'if test -z "$CANARY_SECRET"; then printf clean; else printf leaked; fi'],
+    });
+    expect(environment.stdout).toBe("clean");
+    expect(environment).toMatchObject({ code: 0, stderr: "" });
   });
 
   it("denies host credential reads and symlink escapes", async () => {

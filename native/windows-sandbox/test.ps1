@@ -12,9 +12,16 @@ Set-Content -Path $canary -Value "canary"
 $env:CANARY_SECRET = "must-not-enter"
 
 try {
-  & $Executable --workspace $workspace --command "cmd.exe /d /c echo ok > result.txt && if defined CANARY_SECRET (exit 1)"
-  if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $workspace "result.txt"))) {
-    throw "Workspace write or environment isolation failed"
+  & $Executable --workspace $workspace --command "cmd.exe /d /c echo ok > result.txt"
+  $writeExitCode = $LASTEXITCODE
+  if ($writeExitCode -ne 0 -or -not (Test-Path (Join-Path $workspace "result.txt"))) {
+    throw "Workspace write failed with exit code $writeExitCode"
+  }
+
+  & $Executable --workspace $workspace --command "cmd.exe /d /c if defined CANARY_SECRET (exit 1)"
+  $environmentExitCode = $LASTEXITCODE
+  if ($environmentExitCode -ne 0) {
+    throw "Environment isolation failed with exit code $environmentExitCode"
   }
 
   & $Executable --workspace $workspace --command "cmd.exe /d /c type $canary"
