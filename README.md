@@ -4,7 +4,7 @@ Office Agent is a local-first Electron application being built around the Pi Typ
 
 ## Current status
 
-The repository has completed the foundation milestone and the first managed-library iteration. The application shell, isolated Pi session, immutable imports, basic extraction, searchable locators, documentation checks, and engineering automation are present. Research, Agent writing, OCR/visual indexing, and workspace tools remain disabled.
+The repository has completed the foundation, managed-library, and evidence-analysis milestones. The application shell, isolated Pi session, immutable imports, extraction, searchable locators, deterministic budget analysis, replaceable web providers, and read-only Subagent orchestration are present. Agent writing, OCR/visual indexing, and workspace tools remain disabled.
 
 See the [documentation map](docs/README.md) for architecture, decisions, development workflows, and current capability boundaries.
 

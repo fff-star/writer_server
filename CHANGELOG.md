@@ -19,6 +19,11 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 - TXT, Markdown, CSV, XLSX, DOC, DOCX, and text-PDF extraction with staged locators.
 - Chinese search, Electron import/list/search IPC, and a managed-library interface.
 - A 500-file synthetic ingestion and indexing acceptance test.
+- Hybrid lexical/vector retrieval with provider-backed embedding storage.
+- Deterministic quarterly budget aggregation, calculations, anomalies, and citations.
+- Replaceable public-web search/fetch providers with private-network protection and local cache.
+- Read-only Subagent orchestration with concurrency, step, timeout, and progress limits.
+- Electron budget evidence analysis with explicit web-provider degradation.
 
 ### Security
 

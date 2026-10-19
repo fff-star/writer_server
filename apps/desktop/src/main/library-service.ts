@@ -6,7 +6,7 @@ import type {
 } from "@office-agent/contracts";
 import { extractDocument } from "@office-agent/ingestion";
 import { LibraryStore } from "@office-agent/library";
-import type { LibrarySnapshot } from "@office-agent/library";
+import type { LibrarySnapshot, StoredBlock } from "@office-agent/library";
 import { dialog, type BrowserWindow } from "electron";
 
 const supportedExtensions = [
@@ -129,6 +129,10 @@ export class LibraryService {
         },
       ];
     });
+  }
+
+  blocks(): StoredBlock[] {
+    return this.store.listBlocks();
   }
 
   close(): void {

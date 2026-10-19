@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BudgetPanel } from "./BudgetPanel";
 import { DocumentSpike } from "./DocumentSpike";
 import { LibraryPanel } from "./LibraryPanel";
 
@@ -52,6 +53,7 @@ export function App() {
         ))}
       </section>
       <LibraryPanel />
+      <BudgetPanel />
       <DocumentSpike />
       <footer>
         <span>{info ? `${info.name} ${info.version}` : "正在读取应用信息"}</span>

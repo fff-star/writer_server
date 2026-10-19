@@ -19,7 +19,7 @@
     "lint": "eslint .",
     "package": "pnpm --filter @office-agent/desktop package",
     "package:linux:binary": "node scripts/clean-release.mjs && pnpm --filter @office-agent/desktop package:linux:portable && node scripts/package-linux-portable.mjs && node scripts/hash-artifacts.mjs release",
-    "test": "vitest run --config vitest.config.mts",
+    "test": "pnpm build && vitest run --config vitest.config.mts",
     "test:e2e": "pnpm --filter @office-agent/desktop test:e2e",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "typecheck": "pnpm --recursive --if-present typecheck"

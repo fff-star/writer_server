@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { exportDocumentPdf } from "./document-exporter";
+import { EvidenceService } from "./evidence-service";
 import { LibraryService } from "./library-service";
 import { join } from "node:path";
 
@@ -46,6 +47,7 @@ const createWindow = (): BrowserWindow => {
 };
 
 let libraryServicePromise: Promise<LibraryService> | undefined;
+let evidenceServicePromise: Promise<EvidenceService> | undefined;
 
 function getLibraryService(): Promise<LibraryService> {
   libraryServicePromise ??= LibraryService.create(
@@ -53,6 +55,13 @@ function getLibraryService(): Promise<LibraryService> {
     join(app.getPath("temp"), "office-agent-ingestion"),
   );
   return libraryServicePromise;
+}
+
+function getEvidenceService(): Promise<EvidenceService> {
+  evidenceServicePromise ??= getLibraryService().then((library) =>
+    EvidenceService.create(library, app.getPath("userData")),
+  );
+  return evidenceServicePromise;
 }
 
 app.whenReady().then(() => {
@@ -77,6 +86,12 @@ app.whenReady().then(() => {
     }
     return (await getLibraryService()).search(query);
   });
+  ipcMain.handle("analysis:budget", async (_event, query: unknown) => {
+    if (typeof query !== "string" || query.length === 0 || query.length > 200) {
+      throw new Error("Budget analysis requires a query between 1 and 200 characters");
+    }
+    return (await getEvidenceService()).analyzeBudget(query);
+  });
 
   createWindow();
   app.on("activate", () => {
@@ -89,6 +104,9 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   if (libraryServicePromise) {
     void libraryServicePromise.then((service) => service.close());
+  }
+  if (evidenceServicePromise) {
+    void evidenceServicePromise.then((service) => service.close());
   }
 });
 

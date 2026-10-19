@@ -73,3 +73,65 @@ export const librarySearchResultSchema = z.object({
   score: z.number(),
 });
 export type LibrarySearchResult = z.infer<typeof librarySearchResultSchema>;
+
+export type EmbeddingProvider = {
+  id: string;
+  dimensions: number;
+  embed: (texts: string[]) => Promise<number[][]>;
+};
+
+export const budgetEvidenceSchema = z.object({
+  snapshotId: z.string(),
+  quarter: z.string(),
+  amountCents: z.string(),
+  text: z.string(),
+  locator: sourceLocatorSchema,
+});
+export type BudgetEvidence = z.infer<typeof budgetEvidenceSchema>;
+
+export const budgetQuarterSchema = z.object({
+  quarter: z.string(),
+  totalCents: z.string(),
+  calculation: z.string(),
+  evidence: z.array(budgetEvidenceSchema),
+});
+export type BudgetQuarter = z.infer<typeof budgetQuarterSchema>;
+
+export const budgetAnomalySchema = z.object({
+  kind: z.enum(["increase", "decrease", "negative"]),
+  quarter: z.string(),
+  message: z.string(),
+  changeRatio: z.number().optional(),
+  evidence: z.array(budgetEvidenceSchema),
+});
+export type BudgetAnomaly = z.infer<typeof budgetAnomalySchema>;
+
+export const budgetReportSchema = z.object({
+  quarters: z.array(budgetQuarterSchema),
+  anomalies: z.array(budgetAnomalySchema),
+});
+export type BudgetReport = z.infer<typeof budgetReportSchema>;
+
+export const webSearchResultSchema = z.object({
+  title: z.string().min(1),
+  url: z.url(),
+  snippet: z.string(),
+  publishedAt: z.string().optional(),
+});
+export type WebSearchResult = z.infer<typeof webSearchResultSchema>;
+
+export const webSourceSchema = z.object({
+  url: z.url(),
+  title: z.string(),
+  text: z.string(),
+  sha256: z.string().length(64),
+  fetchedAt: z.string(),
+});
+export type WebSource = z.infer<typeof webSourceSchema>;
+
+export const researchBundleSchema = z.object({
+  query: z.string(),
+  results: z.array(webSearchResultSchema),
+  sources: z.array(webSourceSchema),
+});
+export type ResearchBundle = z.infer<typeof researchBundleSchema>;

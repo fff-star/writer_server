@@ -7,5 +7,7 @@ Each ADR records one significant decision. Supersede an old decision with a new 
 - [ADR 0003: Require an operating-system security boundary](0003-security-boundary.md)
 - [ADR 0004: Use one canonical document model for editing and export](0004-document-model.md)
 - [ADR 0005: Use node:sqlite and staged locators for managed library metadata](0005-library-index-storage.md)
+- [ADR 0006: Use deterministic analysis inside read-only Subagent tasks](0006-deterministic-subagent-analysis.md)
+- [ADR 0007: Restrict research to replaceable public-web providers](0007-public-web-boundary.md)
 
 Return to the [documentation map](../README.md).

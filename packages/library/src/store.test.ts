@@ -57,4 +57,25 @@ describe("LibraryStore", () => {
     expect(results[0]?.locator).toEqual({ kind: "line", line: 1 });
     store.close();
   });
+
+  it("stores embeddings and ranks vector matches", async () => {
+    const { input, store } = await fixture();
+    const imported = await store.importFile(input);
+    store.recordBlocks(
+      imported.snapshot.id,
+      [
+        { kind: "paragraph", text: "预算", locator: { kind: "line", line: 1 } },
+        { kind: "paragraph", text: "差旅", locator: { kind: "line", line: 2 } },
+      ],
+      "indexed",
+    );
+    store.recordEmbeddings(imported.snapshot.id, "fake-embedding", [
+      [1, 0],
+      [0, 1],
+    ]);
+    const results = store.searchVectors("fake-embedding", [1, 0]);
+    expect(results[0]?.blockIndex).toBe(0);
+    expect(results[0]?.score).toBeCloseTo(1);
+    store.close();
+  });
 });

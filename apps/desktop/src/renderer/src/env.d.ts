@@ -10,6 +10,9 @@ declare global {
         list: () => Promise<unknown>;
         search: (query: string) => Promise<unknown>;
       };
+      analysis: {
+        analyzeBudget: (query: string) => Promise<unknown>;
+      };
     };
   }
 }

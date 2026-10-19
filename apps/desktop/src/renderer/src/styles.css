@@ -208,6 +208,24 @@ h1 {
   font-size: 12px;
 }
 
+.budget-panel {
+  margin-top: 56px;
+}
+
+.web-status {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  color: #59635d;
+  background: #e2e5df;
+  font-size: 12px;
+}
+
+.web-status strong {
+  color: #243f32;
+}
+
 footer {
   display: flex;
   justify-content: space-between;

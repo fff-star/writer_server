@@ -27,10 +27,12 @@ try {
       blocks: [{ type: "paragraph", id: "p", text: "中文 PDF 导出验证" }],
     });
     const librarySnapshots = await window.officeAgent.library.list();
+    const budgetAnalysis = await window.officeAgent.analysis.analyzeBudget("预算");
     return {
       info,
       pdfBase64,
       librarySnapshots,
+      budgetAnalysis,
       requireType: typeof window.require,
       processType: typeof window.process,
       moduleType: typeof window.module,
@@ -52,6 +54,12 @@ try {
   }
   if (!Array.isArray(result.librarySnapshots)) {
     throw new Error("Library IPC did not return a snapshot list");
+  }
+  if (
+    !Array.isArray(result.budgetAnalysis.budget.quarters) ||
+    !Array.isArray(result.budgetAnalysis.subagents)
+  ) {
+    throw new Error("Budget analysis IPC returned an invalid evidence report");
   }
 
   const canvas = page.locator('[data-testid="paged-editor"] canvas').first();

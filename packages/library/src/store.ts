@@ -27,12 +27,15 @@ export type ImportResult = {
   objectPath: string;
 };
 
-export type SearchResult = {
+export type StoredBlock = {
   snapshotId: string;
   blockIndex: number;
   kind: string;
   text: string;
   locator: SourceLocator;
+};
+
+export type SearchResult = StoredBlock & {
   score: number;
 };
 
@@ -125,6 +128,14 @@ export class LibraryStore {
         text TEXT NOT NULL,
         locator_json TEXT NOT NULL,
         UNIQUE (snapshot_id, block_index)
+      );
+      CREATE TABLE IF NOT EXISTS embeddings (
+        snapshot_id TEXT NOT NULL REFERENCES snapshots(id) ON DELETE CASCADE,
+        block_index INTEGER NOT NULL,
+        model TEXT NOT NULL,
+        dimensions INTEGER NOT NULL,
+        vector BLOB NOT NULL,
+        PRIMARY KEY (snapshot_id, block_index, model)
       );
       CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts USING fts5(
         text,
@@ -254,6 +265,74 @@ export class LibraryStore {
     }
   }
 
+  recordEmbeddings(snapshotId: string, model: string, vectors: number[][]): void {
+    this.database.exec("BEGIN IMMEDIATE");
+    try {
+      this.database
+        .prepare("DELETE FROM embeddings WHERE snapshot_id = ? AND model = ?")
+        .run(snapshotId, model);
+      const insert = this.database.prepare(
+        "INSERT INTO embeddings (snapshot_id, block_index, model, dimensions, vector) VALUES (?, ?, ?, ?, ?)",
+      );
+      vectors.forEach((vector, blockIndex) => {
+        if (vector.length === 0 || vector.some((value) => !Number.isFinite(value))) {
+          throw new Error(`Invalid embedding vector at block ${blockIndex}`);
+        }
+        const buffer = Buffer.alloc(vector.length * 4);
+        vector.forEach((value, index) => buffer.writeFloatLE(value, index * 4));
+        insert.run(snapshotId, blockIndex, model, vector.length, buffer);
+      });
+      this.database.exec("COMMIT");
+    } catch (error) {
+      this.database.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  searchVectors(model: string, queryVector: number[], limit = 20): SearchResult[] {
+    if (queryVector.length === 0 || queryVector.some((value) => !Number.isFinite(value))) {
+      throw new Error("Invalid query embedding vector");
+    }
+    const queryNorm = Math.sqrt(queryVector.reduce((sum, value) => sum + value * value, 0));
+    if (queryNorm === 0) {
+      return [];
+    }
+    const rows = this.database
+      .prepare(
+        `SELECT e.vector, b.snapshot_id, b.block_index, b.kind, b.text, b.locator_json
+         FROM embeddings e
+         JOIN blocks b ON b.snapshot_id = e.snapshot_id AND b.block_index = e.block_index
+         WHERE e.model = ? AND e.dimensions = ?`,
+      )
+      .all(model, queryVector.length);
+    const results = rows.flatMap((row) => {
+      const value = row as Record<string, unknown>;
+      const vectorBuffer = value["vector"] as Uint8Array;
+      const vector: number[] = [];
+      for (let offset = 0; offset < vectorBuffer.byteLength; offset += 4) {
+        vector.push(Buffer.from(vectorBuffer).readFloatLE(offset));
+      }
+      const norm = Math.sqrt(vector.reduce((sum, item) => sum + item * item, 0));
+      if (norm === 0) {
+        return [];
+      }
+      const score =
+        vector.reduce((sum, item, index) => sum + item * queryVector[index]!, 0) /
+        (norm * queryNorm);
+      return [
+        {
+          snapshotId: String(value["snapshot_id"]),
+          blockIndex: Number(value["block_index"]),
+          kind: String(value["kind"]),
+          text: String(value["text"]),
+          locator: JSON.parse(String(value["locator_json"])) as SourceLocator,
+          score,
+        },
+      ];
+    });
+    return results.sort((left, right) => right.score - left.score).slice(0, limit);
+  }
+
   updateStatus(snapshotId: string, status: ExtractionStatus, error?: string): void {
     this.database
       .prepare("UPDATE snapshots SET status = ?, error = ? WHERE id = ?")
@@ -265,6 +344,30 @@ export class LibraryStore {
       .prepare("SELECT * FROM snapshots ORDER BY imported_at, source_key, version")
       .all();
     return rows.map((row) => rowToSnapshot(row as Record<string, unknown>));
+  }
+
+  listBlocks(snapshotId?: string): StoredBlock[] {
+    const rows = snapshotId
+      ? this.database
+          .prepare(
+            "SELECT snapshot_id, block_index, kind, text, locator_json FROM blocks WHERE snapshot_id = ? ORDER BY block_index",
+          )
+          .all(snapshotId)
+      : this.database
+          .prepare(
+            "SELECT snapshot_id, block_index, kind, text, locator_json FROM blocks ORDER BY snapshot_id, block_index",
+          )
+          .all();
+    return rows.map((row) => {
+      const value = row as Record<string, unknown>;
+      return {
+        snapshotId: String(value["snapshot_id"]),
+        blockIndex: Number(value["block_index"]),
+        kind: String(value["kind"]),
+        text: String(value["text"]),
+        locator: JSON.parse(String(value["locator_json"])) as SourceLocator,
+      };
+    });
   }
 
   getSnapshot(id: string): LibrarySnapshot | undefined {

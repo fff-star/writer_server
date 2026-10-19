@@ -6,10 +6,14 @@ export default defineConfig({
     plugins: [
       externalizeDepsPlugin({
         exclude: [
+          "@office-agent/agent-runtime",
+          "@office-agent/analysis",
           "@office-agent/contracts",
           "@office-agent/document",
           "@office-agent/ingestion",
           "@office-agent/library",
+          "@office-agent/research",
+          "@office-agent/retrieval",
         ],
       }),
     ],
