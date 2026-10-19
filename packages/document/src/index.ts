@@ -23,5 +23,8 @@ export type {
   AgentRevisionResult,
   DocumentSummary,
   DocumentVersion,
+  MessageRole,
+  Project,
+  StoredMessage,
   VersionAuthorKind,
 } from "./versions.js";

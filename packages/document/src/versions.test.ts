@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
 import { DocumentVersionStore } from "./versions.js";
 import type { OfficeDocument } from "./model.js";
@@ -108,5 +109,110 @@ describe("DocumentVersionStore", () => {
     expect(() => store.appendVersion("missing", document("x"))).toThrow();
     expect(() => store.appendAgentRevision(first.documentId, document("x"), second.id)).toThrow();
     store.close();
+  });
+
+  it("migrates an old database without project_id into the default project", async () => {
+    const root = await mkdtemp(join(tmpdir(), "office-agent-versions-"));
+    temporary.push(root);
+    const database = new DatabaseSync(join(root, "versions.db"));
+    database.exec(`
+      CREATE TABLE documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE TABLE versions (
+        id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        parent_id TEXT REFERENCES versions(id),
+        author_kind TEXT NOT NULL CHECK (author_kind IN ('human', 'agent')),
+        created_at TEXT NOT NULL,
+        document_json TEXT NOT NULL
+      );
+      CREATE TABLE conflicts (
+        version_id TEXT NOT NULL REFERENCES versions(id) ON DELETE CASCADE,
+        block_id TEXT NOT NULL,
+        PRIMARY KEY (version_id, block_id)
+      );
+      INSERT INTO documents (id, title, created_at) VALUES ('doc-1', '旧文档', '2024-01-01T00:00:00.000Z');
+    `);
+    database
+      .prepare(
+        `INSERT INTO versions (id, document_id, parent_id, author_kind, created_at, document_json)
+         VALUES ('v-1', 'doc-1', NULL, 'human', '2024-01-01T00:00:00.000Z', ?)`,
+      )
+      .run(JSON.stringify(document("旧内容", "旧文档")));
+    database.close();
+
+    const store = await DocumentVersionStore.open(root);
+    const fallback = store.listProjects().find((project) => project.name === "未归档");
+    expect(fallback).toBeDefined();
+    const documents = store.listDocuments();
+    expect(documents).toHaveLength(1);
+    expect(documents[0]?.projectId).toBe(fallback?.id);
+    expect(store.listDocuments(fallback?.id)).toHaveLength(1);
+    expect(store.latestVersion("doc-1")?.document.blocks[1]).toMatchObject({ text: "旧内容" });
+    store.close();
+  });
+
+  it("scopes documents to projects and falls back to the default project", async () => {
+    const { store } = await openStore();
+    const alpha = store.createProject("项目甲");
+    const beta = store.createProject("项目乙");
+
+    const inAlpha = store.createDocument(document("甲稿"), "human", alpha.id);
+    const inBeta = store.createDocument(document("乙稿"), "human", beta.id);
+    const unassigned = store.createDocument(document("散稿"));
+
+    expect(store.listDocuments(alpha.id).map((entry) => entry.id)).toEqual([inAlpha.documentId]);
+    expect(store.listDocuments(beta.id).map((entry) => entry.id)).toEqual([inBeta.documentId]);
+    expect(store.listDocuments()).toHaveLength(3);
+
+    const fallbackId = unassigned.documentId
+      ? (store.listDocuments().find((entry) => entry.id === unassigned.documentId)?.projectId ?? "")
+      : "";
+    expect(store.getProject(fallbackId)?.name).toBe("未归档");
+
+    expect(() => store.createDocument(document("x"), "human", "missing")).toThrow();
+    expect(() =>
+      store.appendVersion(inAlpha.documentId, document("x"), "human", beta.id),
+    ).toThrow();
+    expect(
+      store.appendVersion(inAlpha.documentId, document("甲改"), "human", alpha.id).document
+        .blocks[1],
+    ).toMatchObject({ text: "甲改" });
+    store.close();
+  });
+
+  it("renames projects and rejects unknown projects", async () => {
+    const { store } = await openStore();
+    const project = store.createProject("旧名");
+    expect(store.renameProject(project.id, "新名").name).toBe("新名");
+    expect(store.getProject(project.id)?.name).toBe("新名");
+    expect(() => store.renameProject("missing", "x")).toThrow();
+    store.close();
+  });
+
+  it("persists conversation messages in order per project", async () => {
+    const { root, store } = await openStore();
+    const alpha = store.createProject("项目甲");
+    const beta = store.createProject("项目乙");
+
+    store.appendMessage(alpha.id, "user", "汇总预算");
+    store.appendMessage(alpha.id, "agent", "识别到 2 个季度预算。", {
+      citations: [{ label: "来源", locator: "local:snap:0" }],
+    });
+    store.appendMessage(beta.id, "user", "你好");
+    expect(() => store.appendMessage("missing", "user", "x")).toThrow();
+    store.close();
+
+    const reopened = await DocumentVersionStore.open(root);
+    const messages = reopened.listMessages(alpha.id);
+    expect(messages.map((message) => message.role)).toEqual(["user", "agent"]);
+    expect(messages[1]?.payload).toEqual({
+      citations: [{ label: "来源", locator: "local:snap:0" }],
+    });
+    expect(reopened.listMessages(beta.id).map((message) => message.text)).toEqual(["你好"]);
+    reopened.close();
   });
 });
