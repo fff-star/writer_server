@@ -6,15 +6,14 @@ Office Agent is a local-first Electron application being built around the Pi Typ
 
 The repository has completed the foundation, managed-library, and evidence-analysis milestones, and the M3 document studio is substantially in place: structured editing of the canonical document model, editable citations, versioned manual edits with conflict surfacing, and DOCX/PDF export with save dialogs. Grounded Chinese drafting is wired end-to-end but returns an explicit unavailable reason until a draft writer (LLM credentials) is configured, and full canvas-editor model binding is deferred. OCR and visual provider interfaces, HTTP adapters, and protected local settings for provider keys are done; images and scanned PDFs index real content once providers are configured.
 
-The latest sandbox CI run was red on both jobs. The Linux failure is root-caused to bubblewrap 0.9 dying on loopback setup under Ubuntu 24.04 AppArmor user-namespace mediation, and the Windows failure to mandatory no-write-up blocking the Low-integrity sandboxed process despite the workspace DACL grant. Fixes are implemented locally — a CI AppArmor profile plus launcher-diagnostic classification on Linux, and a Low mandatory-integrity workspace label on Windows — but await confirmation by a green CI run. The Windows native change is review-verified only and has not been compiled locally. Agent shell execution and file organization remain disabled.
+Both sandbox CI jobs are green. The Linux failure was root-caused to bubblewrap 0.9 dying on loopback setup under Ubuntu 24.04 AppArmor user-namespace mediation; the Windows failure took three fixes — a Low mandatory-integrity workspace label (mandatory no-write-up blocked the Low-integrity process despite the DACL grant), a conformant AppContainer environment block with per-run profile directories (error 203), and adaptive Job-Object breakaway (error 5 on runners whose enclosing job forbids it). The renderer is organized around projects: a persisted conversation per project, project-scoped generated documents, a global managed library, and protected settings. Agent shell execution and file organization remain disabled.
 
 See the [documentation map](docs/README.md) for architecture, decisions, development workflows, and current capability boundaries.
 
 ## Next TODO
 
-- Push the sandbox fixes, watch the GitHub Actions run, and iterate until the Linux and Windows sandbox jobs are green.
 - Configure a draft writer behind the drafting boundary so studio drafting becomes available, and bind the full canvas editor to the document model.
-- Complete the M4 workspace Agent only after the Windows and Linux sandboxes pass their adversarial tests.
+- Complete the M4 workspace Agent; both sandbox jobs now pass their adversarial tests in CI.
 - Validate Windows packaging, remote branch protection, auto-merge behavior, and the manual preview-release workflow.
 
 ## Development requirements
