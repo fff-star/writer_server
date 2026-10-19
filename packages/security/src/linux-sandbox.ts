@@ -18,13 +18,19 @@ export type LinuxSandboxResult = {
   timedOut: boolean;
 };
 
+// bwrap prefixes every diagnostic it prints with "bwrap: ", so those lines describe
+// the launcher rather than the sandboxed command. Keep them as warnings so runner
+// differences (for example the loopback setup being blocked by Ubuntu's AppArmor
+// user-namespace mediation) do not masquerade as command output. The exit code
+// remains authoritative: on bwrap versions where such a diagnostic is fatal the
+// result still carries a non-zero code.
 function normalizeStderr(stderr: string): { stderr: string; warnings: string[] } {
   const warnings: string[] = [];
   const lines = stderr
     .split(/\r?\n/)
     .filter((line) => line.length > 0)
     .filter((line) => {
-      if (line === "bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted") {
+      if (line.startsWith("bwrap: ")) {
         warnings.push(line);
         return false;
       }

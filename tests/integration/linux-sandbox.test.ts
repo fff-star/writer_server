@@ -22,13 +22,27 @@ afterEach(async () => {
 });
 
 linux("Linux bubblewrap boundary", () => {
+  it("starts a sandboxed process on this host", async () => {
+    const probe = await runLinuxSandbox({
+      workspace,
+      command: "/bin/true",
+    });
+    expect(
+      probe,
+      `bwrap could not start a sandbox on this host: ${JSON.stringify(probe)}`,
+    ).toMatchObject({ code: 0, timedOut: false });
+  });
+
   it("allows workspace writes and strips inherited secrets", async () => {
     const write = await runLinuxSandbox({
       workspace,
       command: "/bin/bash",
       args: ["-c", "printf ok > /workspace/result.txt"],
     });
-    expect(write).toMatchObject({ code: 0, stderr: "" });
+    expect(write, `sandbox result: ${JSON.stringify(write)}`).toMatchObject({
+      code: 0,
+      stderr: "",
+    });
     expect(existsSync(join(workspace, "result.txt"))).toBe(true);
 
     const environment = await runLinuxSandbox({
@@ -37,7 +51,10 @@ linux("Linux bubblewrap boundary", () => {
       args: ["-c", 'if test -z "$CANARY_SECRET"; then printf clean; else printf leaked; fi'],
     });
     expect(environment.stdout).toBe("clean");
-    expect(environment).toMatchObject({ code: 0, stderr: "" });
+    expect(environment, `sandbox result: ${JSON.stringify(environment)}`).toMatchObject({
+      code: 0,
+      stderr: "",
+    });
   });
 
   it("denies host credential reads and symlink escapes", async () => {
@@ -54,8 +71,8 @@ linux("Linux bubblewrap boundary", () => {
       command: "/bin/cat",
       args: ["/workspace/escape.txt"],
     });
-    expect(direct.code).not.toBe(0);
-    expect(linked.code).not.toBe(0);
+    expect(direct.code, `sandbox result: ${JSON.stringify(direct)}`).not.toBe(0);
+    expect(linked.code, `sandbox result: ${JSON.stringify(linked)}`).not.toBe(0);
     expect(direct.stdout).not.toContain("canary");
     expect(linked.stdout).not.toContain("canary");
   });
@@ -77,6 +94,6 @@ linux("Linux bubblewrap boundary", () => {
       args: ["-c", "exec 3<>/dev/tcp/1.1.1.1/80"],
       timeoutMs: 3000,
     });
-    expect(result.code).not.toBe(0);
+    expect(result.code, `sandbox result: ${JSON.stringify(result)}`).not.toBe(0);
   });
 });

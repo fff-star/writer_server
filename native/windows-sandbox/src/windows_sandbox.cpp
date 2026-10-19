@@ -21,6 +21,8 @@ struct Resources {
   PACL oldDacl = nullptr;
   PACL newDacl = nullptr;
   PSECURITY_DESCRIPTOR securityDescriptor = nullptr;
+  PACL oldLabelSacl = nullptr;
+  PSECURITY_DESCRIPTOR oldLabelDescriptor = nullptr;
   HANDLE process = nullptr;
   HANDLE thread = nullptr;
   HANDLE job = nullptr;
@@ -28,6 +30,7 @@ struct Resources {
   std::wstring workspace;
   std::wstring profileName;
   bool aclChanged = false;
+  bool labelChanged = false;
   bool profileCreated = false;
 
   ~Resources() {
@@ -49,11 +52,18 @@ struct Resources {
           const_cast<LPWSTR>(workspace.c_str()), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION,
           nullptr, nullptr, oldDacl, nullptr);
     }
+    if (labelChanged) {
+      SetNamedSecurityInfoW(const_cast<LPWSTR>(workspace.c_str()), SE_FILE_OBJECT,
+                            LABEL_SECURITY_INFORMATION, nullptr, nullptr, nullptr, oldLabelSacl);
+    }
     if (newDacl) {
       LocalFree(newDacl);
     }
     if (securityDescriptor) {
       LocalFree(securityDescriptor);
+    }
+    if (oldLabelDescriptor) {
+      LocalFree(oldLabelDescriptor);
     }
     if (!profileName.empty()) {
       DeleteAppContainerProfile(profileName.c_str());
@@ -146,6 +156,36 @@ void grantWorkspace(Resources& resources) {
   resources.aclChanged = true;
 }
 
+// AppContainer tokens run at Low integrity, and mandatory no-write-up denies their
+// writes to unlabeled (implicit Medium) directories even when the DACL grants them.
+// Label the workspace Low with inheritance so the sandboxed process can write it,
+// and restore the original label on teardown.
+void grantWorkspaceLabel(Resources& resources) {
+  const DWORD read = GetNamedSecurityInfoW(
+      resources.workspace.c_str(), SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, nullptr, nullptr,
+      nullptr, &resources.oldLabelSacl, &resources.oldLabelDescriptor);
+  if (read != ERROR_SUCCESS) {
+    resources.oldLabelSacl = nullptr;
+    resources.oldLabelDescriptor = nullptr;
+  }
+
+  PSECURITY_DESCRIPTOR label = nullptr;
+  requireWin32(ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                   L"S:(ML;OICI;NW;;;LW)", SDDL_REVISION_1, &label, nullptr),
+               "ConvertStringSecurityDescriptorToSecurityDescriptorW");
+  PACL sacl = nullptr;
+  BOOL present = FALSE;
+  BOOL defaulted = FALSE;
+  const BOOL gotSacl = GetSecurityDescriptorSacl(label, &present, &sacl, &defaulted);
+  requireWin32(gotSacl && present, "GetSecurityDescriptorSacl");
+  requireWin32(SetNamedSecurityInfoW(const_cast<LPWSTR>(resources.workspace.c_str()),
+                                     SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, nullptr, nullptr,
+                                     nullptr, sacl) == ERROR_SUCCESS,
+               "SetNamedSecurityInfoW(LABEL)");
+  LocalFree(label);
+  resources.labelChanged = true;
+}
+
 void createJob(Resources& resources) {
   resources.job = CreateJobObjectW(nullptr, nullptr);
   if (!resources.job) {
@@ -212,6 +252,7 @@ int wmain(int argc, wchar_t** argv) {
     resources.workspace = argv[2];
     createAppContainer(resources);
     grantWorkspace(resources);
+    grantWorkspaceLabel(resources);
     createJob(resources);
     return static_cast<int>(runIsolated(resources, argv[4]));
   } catch (const std::exception& error) {

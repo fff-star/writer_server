@@ -39,6 +39,44 @@ jobs:
           cache: pnpm
       - name: Install system test tools
         run: sudo apt-get update && sudo apt-get install -y bubblewrap libreoffice xvfb
+      - name: Allow bubblewrap user namespaces
+        # Ubuntu 24.04 mediates unprivileged user namespaces with AppArmor, which
+        # makes bwrap's loopback setup fail with EPERM (fatal on bwrap 0.9). Load a
+        # profile that grants bwrap user namespaces on this runner.
+        run: |
+          if [ -f /etc/apparmor.d/bwrap-userns-restrict ]; then
+            echo "bwrap-userns-restrict profile already loaded"
+          elif [ -f /usr/share/apparmor/extra-profiles/bwrap-userns-restrict ]; then
+            sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+            sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          else
+            sudo tee /etc/apparmor.d/office-agent-bwrap > /dev/null <<'PROFILE'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile office-agent-bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          PROFILE
+            sudo apparmor_parser -r /etc/apparmor.d/office-agent-bwrap
+          fi
+      - name: Verify sandbox launcher
+        run: |
+          bwrap --version
+          sandbox_root="$(mktemp -d)"
+          bwrap_args=(--die-with-parent --new-session --unshare-all --cap-drop ALL --clearenv)
+          for path in /usr /lib /lib64 /bin /sbin; do
+            if [ -e "$path" ]; then
+              bwrap_args+=(--ro-bind "$path" "$path")
+            fi
+          done
+          bwrap "${bwrap_args[@]}" \
+            --dev /dev --proc /proc --tmpfs /tmp \
+            --dir /workspace --bind "$sandbox_root" /workspace --chdir /workspace \
+            --setenv PATH /usr/bin:/bin --setenv HOME /tmp \
+            -- /bin/bash -c 'printf ok > /workspace/result.txt'
+          test -f "$sandbox_root/result.txt"
+          rm -rf "$sandbox_root"
       - run: pnpm install --frozen-lockfile
       - run: pnpm ci:check
       - run: pnpm lint

@@ -16,4 +16,10 @@ Local source snapshots are intended to remain on the device. Configured cloud pr
 
 Tracked workspace file changes may be reversible. Network requests, external application actions, and other outside effects are not generally reversible and must not be described as covered by rollback.
 
+## Sandbox adapter notes
+
+The Linux adapter treats every stderr line prefixed with `bwrap:` as a launcher diagnostic recorded as a warning, never as sandboxed-command output; the exit code remains authoritative, so a launcher failure still fails closed. CI runners load an AppArmor profile that grants bubblewrap user namespaces, because Ubuntu 24.04 mediation otherwise kills bwrap during loopback setup.
+
+The experimental Windows helper grants the workspace a DACL entry for the per-run AppContainer SID and a Low mandatory-integrity label (`S:(ML;OICI;NW;;;LW)`), because mandatory no-write-up otherwise denies the Low-integrity sandboxed process writes to an unlabeled directory despite the DACL grant. Both the label and the DACL are restored on teardown. This widens write access only inside the nominated workspace directory; the AppContainer still has no declared network capabilities and the Job Object still owns process-tree cleanup. The helper remains an unverified spike until its adversarial CI job passes.
+
 See the [security architecture decision](docs/adr/0003-security-boundary.md).
