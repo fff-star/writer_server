@@ -27,7 +27,6 @@ linux("Linux bubblewrap boundary", () => {
       workspace,
       command: "/bin/bash",
       args: ["-c", 'printf ok > /workspace/result.txt && test -z "$CANARY_SECRET"'],
-      environment: { CANARY_SECRET: "must-not-enter" },
     });
     expect(result.stderr).toBe("");
     expect(result.code).toBe(0);

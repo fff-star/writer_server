@@ -6,7 +6,6 @@ export type LinuxSandboxRequest = {
   workspace: string;
   command: string;
   args?: string[];
-  environment?: Record<string, string>;
   timeoutMs?: number;
 };
 
@@ -78,7 +77,7 @@ function sandboxArguments(request: LinuxSandboxRequest): string[] {
 export async function runLinuxSandbox(request: LinuxSandboxRequest): Promise<LinuxSandboxResult> {
   return new Promise((resolvePromise, reject) => {
     const child = spawn("bwrap", sandboxArguments(request), {
-      env: request.environment ?? {},
+      env: { PATH: process.env["PATH"] ?? "" },
       stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";

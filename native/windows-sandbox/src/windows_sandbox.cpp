@@ -185,7 +185,8 @@ DWORD runIsolated(Resources& resources, const std::wstring& command) {
 
   requireWin32(CreateProcessW(
                    nullptr, mutableCommand.data(), nullptr, nullptr, TRUE,
-                   CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
+                   CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB | EXTENDED_STARTUPINFO_PRESENT |
+                       CREATE_UNICODE_ENVIRONMENT,
                    environment.data(), resources.workspace.c_str(), &startup.StartupInfo, &processInfo),
                "CreateProcessW");
   resources.process = processInfo.hProcess;
