@@ -1,15 +1,33 @@
 import { readFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { basename, extname } from "node:path";
 import type { ExtractedBlock, ExtractionStatus } from "@office-agent/contracts";
 import { parse } from "csv-parse/sync";
 import ExcelJS from "exceljs";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { convertLegacyDoc } from "./libreoffice.js";
+import type { OcrProvider, PdfPageRasterizer, ProviderImage, VisualProvider } from "./providers.js";
 
 export type ExtractionResult = {
   status: Exclude<ExtractionStatus, "imported" | "processing">;
   blocks: ExtractedBlock[];
   error?: string;
+};
+
+export type ExtractionOptions = {
+  ocr?: OcrProvider;
+  visual?: VisualProvider;
+  pdfRasterizer?: PdfPageRasterizer;
+  ocrLanguages?: string[];
+};
+
+const imageMediaTypes: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".tif": "image/tiff",
+  ".tiff": "image/tiff",
 };
 
 function decodeXml(value: string): string {
@@ -159,10 +177,128 @@ async function extractPdfBlocks(path: string): Promise<ExtractedBlock[]> {
   }
 }
 
+async function extractImageBlocks(
+  image: ProviderImage,
+  extension: string,
+  options: ExtractionOptions,
+): Promise<ExtractionResult> {
+  const stubBlock: ExtractedBlock = {
+    kind: "image",
+    text: `${extension} image requires OCR and visual analysis.`,
+    locator: { kind: "file" },
+  };
+  if (!options.ocr && !options.visual) {
+    return {
+      status: "partial",
+      blocks: [stubBlock],
+      error: "OCR and visual providers are not configured",
+    };
+  }
+  const blocks: ExtractedBlock[] = [];
+  const failures: string[] = [];
+  if (options.ocr) {
+    try {
+      const result = await options.ocr.recognize({
+        image,
+        ...(options.ocrLanguages ? { languages: options.ocrLanguages } : {}),
+      });
+      if (result.text.trim()) {
+        blocks.push({ kind: "text", text: result.text.trim(), locator: { kind: "file" } });
+      }
+    } catch (error) {
+      failures.push(
+        `OCR provider "${options.ocr.id}" failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  if (options.visual) {
+    try {
+      const result = await options.visual.describe({ image });
+      if (result.caption.trim()) {
+        blocks.push({ kind: "image", text: result.caption.trim(), locator: { kind: "file" } });
+      }
+    } catch (error) {
+      failures.push(
+        `Visual provider "${options.visual.id}" failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  if (blocks.length === 0) {
+    return {
+      status: "partial",
+      blocks: [stubBlock],
+      error:
+        failures.length > 0 ? failures.join("; ") : "OCR and visual providers returned no content",
+    };
+  }
+  return {
+    status: failures.length > 0 ? "partial" : "indexed",
+    blocks,
+    ...(failures.length > 0 ? { error: failures.join("; ") } : {}),
+  };
+}
+
+async function extractScannedPdfBlocks(
+  path: string,
+  options: ExtractionOptions,
+): Promise<ExtractionResult> {
+  const stubBlock: ExtractedBlock = {
+    kind: "metadata",
+    text: "PDF contains no extractable text; OCR is required.",
+    locator: { kind: "file" },
+  };
+  if (!options.ocr || !options.pdfRasterizer) {
+    return {
+      status: "partial",
+      blocks: [stubBlock],
+      error: "OCR provider is not configured",
+    };
+  }
+  let pages: ProviderImage[];
+  try {
+    pages = await options.pdfRasterizer.renderPages(path);
+  } catch (error) {
+    return {
+      status: "partial",
+      blocks: [stubBlock],
+      error: `PDF rasterizer "${options.pdfRasterizer.id}" failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+  const blocks: ExtractedBlock[] = [];
+  for (const [index, page] of pages.entries()) {
+    let result;
+    try {
+      result = await options.ocr.recognize({
+        image: page,
+        ...(options.ocrLanguages ? { languages: options.ocrLanguages } : {}),
+      });
+    } catch (error) {
+      return {
+        status: "partial",
+        blocks: [stubBlock],
+        error: `OCR provider "${options.ocr.id}" failed on page ${index + 1}: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+    const text = result.text.trim();
+    if (text) {
+      blocks.push({ kind: "text", text, locator: { kind: "page", page: index + 1 } });
+    }
+  }
+  if (blocks.length === 0) {
+    return {
+      status: "partial",
+      blocks: [stubBlock],
+      error: `OCR provider "${options.ocr.id}" returned no text for ${pages.length} rendered page(s)`,
+    };
+  }
+  return { status: "indexed", blocks };
+}
+
 export async function extractDocument(
   path: string,
   temporaryDirectory: string,
   extensionOverride?: string,
+  options: ExtractionOptions = {},
 ): Promise<ExtractionResult> {
   const extension = (extensionOverride ?? extname(path)).toLowerCase();
   try {
@@ -188,17 +324,7 @@ export async function extractDocument(
       case ".pdf": {
         const blocks = await extractPdfBlocks(path);
         if (blocks.length === 0) {
-          return {
-            status: "partial",
-            blocks: [
-              {
-                kind: "metadata",
-                text: "PDF contains no extractable text; OCR is required.",
-                locator: { kind: "file" },
-              },
-            ],
-            error: "OCR provider is not configured",
-          };
+          return await extractScannedPdfBlocks(path, options);
         }
         return { status: "indexed", blocks };
       }
@@ -209,17 +335,12 @@ export async function extractDocument(
       case ".bmp":
       case ".tif":
       case ".tiff": {
-        return {
-          status: "partial",
-          blocks: [
-            {
-              kind: "image",
-              text: `${extension} image requires OCR and visual analysis.`,
-              locator: { kind: "file" },
-            },
-          ],
-          error: "OCR and visual providers are not configured",
+        const image: ProviderImage = {
+          data: new Uint8Array(await readFile(path)),
+          mediaType: imageMediaTypes[extension] ?? "application/octet-stream",
+          fileName: basename(path),
         };
+        return await extractImageBlocks(image, extension, options);
       }
       default:
         return { status: "failed", blocks: [], error: `Unsupported extension: ${extension}` };

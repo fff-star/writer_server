@@ -13,7 +13,9 @@ The managed library stores every import as an immutable content-addressed snapsh
 
 ## Partial formats
 
-Images and scanned PDFs are marked `partial` until OCR and visual providers are configured. Their records remain visible so the application cannot silently claim complete indexing.
+Images and scanned PDFs are indexed by configured OCR and visual providers: OCR text becomes text blocks and visual captions become image blocks, both located by file. A provider failure downgrades that import to `partial` with the failing provider named. Scanned-PDF OCR requires a page rasterizer in addition to the OCR provider, and no rasterizer is shipped yet.
+
+Without configured providers, images and scanned PDFs are marked `partial` with an explicit stub record explaining that OCR and visual analysis are required. Their records remain visible so the application cannot silently claim complete indexing. See [configuration](configuration.md) for how providers are enabled.
 
 Unsupported extensions are stored only when imported through a supported managed-library path and are marked `failed` with an explicit reason. PPTX, legacy XLS, GIF, and HEIC are not content-indexing formats.
 
