@@ -291,9 +291,13 @@ function BlockEditor(props: {
   );
 }
 
-export function StudioPanel({ projectId }: { projectId: string }) {
+export function StudioPanel(props: {
+  projectId: string;
+  selectedId: string | null;
+  onSelectId: (documentId: string) => void;
+}) {
+  const { projectId, selectedId, onSelectId } = props;
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<OfficeDocument | null>(null);
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [newTitle, setNewTitle] = useState("");
@@ -327,7 +331,7 @@ export function StudioPanel({ projectId }: { projectId: string }) {
         setMessage("该文档还没有任何版本");
         return;
       }
-      setSelectedId(documentId);
+      onSelectId(documentId);
       setDraft(latest.document);
       setDraftTopic(latest.document.title);
       setAgentDraft(null);

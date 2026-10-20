@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { CanvasEditor } from "./CanvasEditor";
 import { ConversationView } from "./ConversationView";
-import { DocumentSpike } from "./DocumentSpike";
 import { LibraryPanel } from "./LibraryPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { StudioPanel } from "./StudioPanel";
@@ -36,6 +36,7 @@ export function App() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [view, setView] = useState<ViewId>("workspace");
   const [tab, setTab] = useState<WorkspaceTab>("conversation");
   const [creating, setCreating] = useState(false);
@@ -54,6 +55,7 @@ export function App() {
 
   const selectProject = (projectId: string) => {
     setSelectedProjectId(projectId);
+    setSelectedDocumentId(null);
     setView("workspace");
     setTab("conversation");
   };
@@ -192,9 +194,16 @@ export function App() {
                 <ConversationView key={selectedProject.id} projectId={selectedProject.id} />
               )}
               {tab === "documents" && (
-                <StudioPanel key={selectedProject.id} projectId={selectedProject.id} />
+                <StudioPanel
+                  key={selectedProject.id}
+                  projectId={selectedProject.id}
+                  selectedId={selectedDocumentId}
+                  onSelectId={setSelectedDocumentId}
+                />
               )}
-              {tab === "editor" && <DocumentSpike />}
+              {tab === "editor" && (
+                <CanvasEditor key={selectedProject.id} documentId={selectedDocumentId} />
+              )}
             </div>
           </>
         ) : view === "library" ? (
