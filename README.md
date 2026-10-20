@@ -15,7 +15,7 @@ See the [documentation map](docs/README.md) for architecture, decisions, develop
 ## Next TODO
 
 - Configure a draft writer behind the drafting boundary so studio drafting becomes available (requires LLM credentials), and wire the agent host to a live model so the broker-gated workspace tools run end-to-end.
-- Validate Windows packaging, remote branch protection, auto-merge behavior, and the manual preview-release workflow.
+- Trigger the manual preview-release workflow once to validate it. Windows packaging, remote branch protection (pull request plus required `quality` and `windows-sandbox` checks), and auto-merge are validated.
 
 ## Development requirements
 
