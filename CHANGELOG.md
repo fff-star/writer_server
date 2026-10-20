@@ -27,8 +27,17 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 - Documentation-impact CI gate mapping code areas to required documentation updates, with a `docs-impact: none` bypass marker.
 - Command freshness checks matching package.json scripts, command documentation, and CI usage.
 - ADR structure validation and immutability protection for Accepted decision records.
+- Document studio with structured block editing, editable citations, versioned manual edits, agent-revision conflict surfacing, and DOCX/PDF export with save dialogs.
+- Canvas editor bound to the canonical document model with round-tripping headings, paragraphs, lists, tables, and preserved citations.
+- Grounded Chinese drafting pipeline behind an injectable writer boundary, unavailable until a draft writer is configured.
+- Protected local settings store for provider secrets with OCR and visual HTTP provider adapters.
+- Policy broker as the only gateway for workspace tool calls, with path confinement, credential-target denial, no-overwrite creation, per-file edit backups with byte-exact rollback, and hash-chained audit.
+- Linux sandbox startup self-check gating the shell tool; broker-gated workspace tools registered with the isolated Pi session only when a broker is supplied.
+- Broker-required gate for write-capable Subagent tasks such as the `workspace-edit` role.
+- Unit tests for conversation intent dispatch, evidence-service key resolution order, and library-service provider threading.
 
 ### Security
 
-- No workspace shell or file mutation tool is enabled in the foundation shell.
+- Workspace tool calls pass only through the policy broker; shell execution requires a passing Linux sandbox self-check and fails closed elsewhere.
+- The isolated Pi session exposes no tools unless a policy broker is explicitly supplied.
 - Windows native sandbox code remains experimental until its Windows CI checks pass.

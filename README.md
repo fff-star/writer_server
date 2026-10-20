@@ -4,24 +4,18 @@ Office Agent is a local-first Electron application being built around the Pi Typ
 
 ## Current status
 
-The repository has completed the foundation, managed-library, and evidence-analysis milestones, and the M3 document studio is substantially in place: structured editing of the canonical document model, editable citations, versioned manual edits with conflict surfacing, and DOCX/PDF export with save dialogs. Grounded Chinese drafting is wired end-to-end but returns an explicit unavailable reason until a draft writer (LLM credentials) is configured, and full canvas-editor model binding is deferred. OCR and visual provider interfaces, HTTP adapters, and protected local settings for provider keys are done; images and scanned PDFs index real content once providers are configured.
+The repository has completed the foundation, managed-library, and evidence-analysis milestones, and the M3 document studio is substantially in place: structured editing of the canonical document model, editable citations, versioned manual edits with conflict surfacing, and DOCX/PDF export with save dialogs. The editor tab binds the paginated canvas editor to the same document model — it loads the selected document's latest version and saves explicit versions through the studio version store. Grounded Chinese drafting is wired end-to-end but returns an explicit unavailable reason until a draft writer (LLM credentials) is configured. OCR and visual provider interfaces, HTTP adapters, and protected local settings for provider keys are done; images and scanned PDFs index real content once providers are configured.
 
-Both sandbox CI jobs are green. The Linux failure was root-caused to bubblewrap 0.9 dying on loopback setup under Ubuntu 24.04 AppArmor user-namespace mediation; the Windows failure took three fixes — a Low mandatory-integrity workspace label (mandatory no-write-up blocked the Low-integrity process despite the DACL grant), a conformant AppContainer environment block with per-run profile directories (error 203), and adaptive Job-Object breakaway (error 5 on runners whose enclosing job forbids it). The renderer is organized around projects: a persisted conversation per project, project-scoped generated documents, a global managed library, and protected settings. Agent shell execution and file organization remain disabled.
+Both sandbox CI jobs are green. The Linux failure was root-caused to bubblewrap 0.9 dying on loopback setup under Ubuntu 24.04 AppArmor user-namespace mediation; the Windows failure took three fixes — a Low mandatory-integrity workspace label (mandatory no-write-up blocked the Low-integrity process despite the DACL grant), a conformant AppContainer environment block with per-run profile directories (error 203), and adaptive Job-Object breakaway (error 5 on runners whose enclosing job forbids it). The renderer is organized around projects: a persisted conversation per project, project-scoped generated documents, a global managed library, and protected settings.
+
+The M4 workspace Agent milestone has landed its security core: a policy broker in `packages/security` is the only gateway for workspace tool calls (path confinement, credential-target denial, no-overwrite creation, per-file edit backups with byte-exact rollback, hash-chained audit of every decision, per ADR 0012). A startup self-check probes the bubblewrap adapter, and shell stays disabled unless the probe passes; Windows fails closed until the native helper ships in the app. Broker-gated tools (list/read/create/edit-with-rollback/shell) are registered with the isolated Pi session only when a broker is explicitly supplied — the default session stays tool-free — and write-capable Subagent tasks (`workspace-edit` role) run only under a broker. No LLM credentials exist yet, so the agent host wiring is unit-tested but not yet exercised end-to-end with a live model. Agent shell execution and file organization remain disabled in the desktop app itself.
 
 See the [documentation map](docs/README.md) for architecture, decisions, development workflows, and current capability boundaries.
 
 ## Next TODO
 
-- Configure a draft writer behind the drafting boundary so studio drafting becomes available, and bind the full canvas editor to the document model.
-- Complete the M4 workspace Agent; both sandbox jobs now pass their adversarial tests in CI. Scoped plan for next session:
-  1. Policy broker in `packages/security` as the only gateway for workspace tool calls (path confinement via `resolveWorkspacePath`, credential-target denial, no overwrite, no delete/elevation this milestone, every decision hash-chained into the audit log).
-  2. Sandbox adapter startup self-check (probe through `runLinuxSandbox`); shell tool allowed only when the probe passes, Windows fails closed until the helper ships in the app.
-  3. Broker-gated workspace tools: list/read/create/edit-with-snapshot-rollback/shell, with adversarial tests (escapes, credential paths, overwrite, rollback restore, audit entries).
-  4. Replace the read-only throw in `SubagentOrchestrator` with a broker-required gate for write roles (e.g. `workspace-edit`).
-  5. Register tools explicitly with the isolated Pi session only when a broker is provided (default stays `noTools: "all"`); no LLM credentials exist yet, so unit-test the wiring.
-  6. Move ADR 0003 to Accepted once the broker lands, and add an ADR for the broker/tool-registration boundary.
+- Configure a draft writer behind the drafting boundary so studio drafting becomes available (requires LLM credentials), and wire the agent host to a live model so the broker-gated workspace tools run end-to-end.
 - Validate Windows packaging, remote branch protection, auto-merge behavior, and the manual preview-release workflow.
-- Add unit tests for conversation intent dispatch, evidence-service key resolution order, and library-service provider threading.
 
 ## Development requirements
 
