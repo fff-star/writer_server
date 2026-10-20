@@ -4,6 +4,8 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 
 ## Unreleased
 
+## [0.1.0] - 2026-10-20
+
 ### Added
 
 - Initial pnpm and TypeScript workspace.
