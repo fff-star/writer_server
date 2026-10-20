@@ -117,16 +117,27 @@ try {
     );
   }
 
+  await page.waitForSelector("text=编辑器已加载");
   const canvas = page.locator('[data-testid="paged-editor"] canvas').first();
-  const bounds = await canvas.boundingBox();
-  if (!bounds) {
-    throw new Error("Paged editor canvas has no layout bounds");
+  let typed = false;
+  for (let attempt = 0; attempt < 3 && !typed; attempt += 1) {
+    await canvas.click();
+    await page.keyboard.insertText("人工修改");
+    typed = await page
+      .waitForFunction(
+        () =>
+          document
+            .querySelector('[data-testid="document-text"]')
+            ?.textContent?.includes("人工修改"),
+        undefined,
+        { timeout: 10_000 },
+      )
+      .then(() => true)
+      .catch(() => false);
   }
-  await page.mouse.click(bounds.x + 100, bounds.y + 100);
-  await page.keyboard.insertText("人工修改");
-  await page.waitForFunction(() =>
-    document.querySelector('[data-testid="document-text"]')?.textContent?.includes("人工修改"),
-  );
+  if (!typed) {
+    throw new Error("Paged editor did not reflect typed text after 3 attempts");
+  }
 
   process.stdout.write(
     `${JSON.stringify({ ok: true, isolation: true, pdf: true, pagedEditor: true, studio: true })}\n`,

@@ -36,6 +36,12 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 - Broker-required gate for write-capable Subagent tasks such as the `workspace-edit` role.
 - Unit tests for conversation intent dispatch, evidence-service key resolution order, and library-service provider threading.
 
+### Fixed
+
+- Pre-build typecheck for workspace consumers of `@office-agent/security` by serving its type declarations from source.
+- Windows CI failures from platform assumptions in shell-denial tests by injecting the platform under test.
+- Headless e2e flakiness by waiting for canvas-editor readiness and clicking the canvas center with retries instead of fixed offsets.
+
 ### Security
 
 - Workspace tool calls pass only through the policy broker; shell execution requires a passing Linux sandbox self-check and fails closed elsewhere.
