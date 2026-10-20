@@ -1,7 +1,9 @@
-import { resolve } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { _electron as electron } from "playwright";
 
 const appDirectory = resolve(import.meta.dirname, "..");
+const artifactsDir = resolve(import.meta.dirname, "../../../artifacts/e2e");
 const executablePath = process.env["OFFICE_AGENT_EXECUTABLE"];
 const application = await electron.launch({
   ...(executablePath ? { executablePath } : { args: [appDirectory] }),
@@ -12,8 +14,13 @@ const application = await electron.launch({
   },
 });
 
+let page;
+const consoleLines = [];
 try {
-  const page = await application.firstWindow();
+  page = await application.firstWindow();
+  page.on("console", (message) => consoleLines.push(`[${message.type()}] ${message.text()}`));
+  page.on("pageerror", (error) => consoleLines.push(`[pageerror] ${error.message}`));
+  await application.context().tracing.start({ screenshots: true, snapshots: true });
   await page.waitForSelector("h1");
   await page.click('[data-testid="new-project"]');
   await page.fill('[data-testid="project-name-input"]', "端到端验证项目");
@@ -142,6 +149,22 @@ try {
   process.stdout.write(
     `${JSON.stringify({ ok: true, isolation: true, pdf: true, pagedEditor: true, studio: true })}\n`,
   );
+  await application.context().tracing.stop();
+} catch (error) {
+  await mkdir(artifactsDir, { recursive: true });
+  if (page) {
+    await page.screenshot({ path: join(artifactsDir, "failure.png") }).catch(() => {});
+    await writeFile(join(artifactsDir, "failure.html"), await page.content()).catch(() => {});
+  }
+  await writeFile(join(artifactsDir, "renderer-console.log"), consoleLines.join("\n")).catch(
+    () => {},
+  );
+  await application
+    .context()
+    .tracing.stop({ path: join(artifactsDir, "trace.zip") })
+    .catch(() => {});
+  console.error(`e2e failure artifacts written to ${artifactsDir}`);
+  throw error;
 } finally {
   await application.close();
 }

@@ -20,7 +20,7 @@ GitHub merges only after required checks pass. The Agent must not use administra
 
 ## Pull-request checks
 
-The `quality` job validates workflows, lint, formatting, types, unit tests, documentation, build, Linux integration tests, Electron end-to-end tests, Conventional Commits, and production dependency audit. Before the pnpm steps it loads an AppArmor profile that grants bubblewrap user namespaces — Ubuntu 24.04 mediation otherwise kills bwrap during loopback setup — and runs a sandbox-launcher smoke check that writes a file through `bwrap`. The `windows-sandbox` job builds the native helper, runs its adversarial script, and verifies the desktop shell on Windows.
+The `quality` job validates workflows, lint, formatting, types, unit tests, documentation, build, Linux integration tests, Electron end-to-end tests, Conventional Commits, and production dependency audit. Before the pnpm steps it loads an AppArmor profile that grants bubblewrap user namespaces — Ubuntu 24.04 mediation otherwise kills bwrap during loopback setup — and runs a sandbox-launcher smoke check that writes a file through `bwrap`. The `windows-sandbox` job builds the native helper, runs its adversarial script, and verifies the desktop shell on Windows. When the end-to-end test fails, the script captures a screenshot, the page DOM, the renderer console log, and a Playwright trace under `artifacts/e2e/`, and the job uploads them as the `e2e-failure-artifacts` artifact (retained 14 days).
 
 A green local run is useful evidence but is not proof that branch protection is configured.
 

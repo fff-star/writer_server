@@ -38,6 +38,8 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 
 ### Fixed
 
+- End-to-end failures now capture a screenshot, page DOM, renderer console log, and a Playwright trace, uploaded by CI as the `e2e-failure-artifacts` artifact.
+
 - Pre-build typecheck for workspace consumers of `@office-agent/security` by serving its type declarations from source.
 - Windows CI failures from platform assumptions in shell-denial tests by injecting the platform under test.
 - Headless e2e flakiness by waiting for canvas-editor readiness and clicking the canvas center with retries instead of fixed offsets.
