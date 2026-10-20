@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
 
-export type SubagentRole = "local-research" | "web-research" | "budget-analysis" | "synthesis";
+export type SubagentRole =
+  "local-research" | "web-research" | "budget-analysis" | "synthesis" | "workspace-edit";
 export type SubagentEvent = {
   type: "queued" | "started" | "progress" | "completed" | "failed" | "cancelled";
   taskId: string;
@@ -35,17 +36,23 @@ export type SubagentOrchestratorOptions = {
   maxConcurrency?: number;
   timeoutMs?: number;
   maxSteps?: number;
+  // Presence gate only: write-capable tasks (readOnly: false) may run only when
+  // a policy broker was supplied. The broker itself is used by the task's run
+  // function, never by the orchestrator, so it stays untyped here.
+  policyBroker?: unknown;
 };
 
 export class SubagentOrchestrator {
   private readonly maxConcurrency: number;
   private readonly timeoutMs: number;
   private readonly maxSteps: number;
+  private readonly hasPolicyBroker: boolean;
 
   constructor(options: SubagentOrchestratorOptions = {}) {
     this.maxConcurrency = options.maxConcurrency ?? 3;
     this.timeoutMs = options.timeoutMs ?? 60_000;
     this.maxSteps = options.maxSteps ?? 20;
+    this.hasPolicyBroker = options.policyBroker !== undefined && options.policyBroker !== null;
     if (this.maxConcurrency < 1 || this.timeoutMs < 1 || this.maxSteps < 1) {
       throw new Error("Subagent limits must be positive");
     }
@@ -103,8 +110,8 @@ export class SubagentOrchestrator {
       this.timeoutMs,
     );
     try {
-      if (!task.readOnly) {
-        throw new Error("Subagents must use read-only tasks in this milestone");
+      if (!task.readOnly && !this.hasPolicyBroker) {
+        throw new Error("Write-capable subagent tasks require a policy broker");
       }
       const output = await task.run(context);
       if (controller.signal.aborted) {

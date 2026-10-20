@@ -60,7 +60,39 @@ describe("SubagentOrchestrator", () => {
     ]);
 
     expect(writeTask?.status).toBe("failed");
+    expect(writeTask?.error).toContain("policy broker");
     expect(stepTask?.status).toBe("cancelled");
     expect(timeoutTask?.status).toBe("cancelled");
+  });
+
+  it("runs write-capable tasks when a policy broker is provided", async () => {
+    const orchestrator = new SubagentOrchestrator({ policyBroker: {} });
+    const [result] = await orchestrator.runAll([
+      {
+        role: "workspace-edit",
+        input: null,
+        readOnly: false,
+        run: async () => "edited",
+      },
+    ]);
+
+    expect(result?.status).toBe("completed");
+    expect(result?.output).toBe("edited");
+  });
+
+  it("rejects write-capable tasks when the broker is absent or null", async () => {
+    const task = {
+      role: "workspace-edit" as const,
+      input: null,
+      readOnly: false,
+      run: async () => "unreachable",
+    };
+    const [absent] = await new SubagentOrchestrator().runAll([task]);
+    const [nullBroker] = await new SubagentOrchestrator({ policyBroker: null }).runAll([task]);
+
+    expect(absent?.status).toBe("failed");
+    expect(absent?.error).toContain("policy broker");
+    expect(nullBroker?.status).toBe("failed");
+    expect(nullBroker?.error).toContain("policy broker");
   });
 });
