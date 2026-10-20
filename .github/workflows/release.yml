@@ -31,6 +31,27 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: sudo apt-get update && sudo apt-get install -y bubblewrap libreoffice xvfb
+      - name: Allow bubblewrap user namespaces
+        # Same AppArmor mediation issue as the CI quality job: Ubuntu 24.04
+        # kills bwrap during loopback setup unless a profile grants it user
+        # namespaces. Keep this step in sync with .github/workflows/ci.yml.
+        run: |
+          if [ -f /etc/apparmor.d/bwrap-userns-restrict ]; then
+            echo "bwrap-userns-restrict profile already loaded"
+          elif [ -f /usr/share/apparmor/extra-profiles/bwrap-userns-restrict ]; then
+            sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+            sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          else
+            sudo tee /etc/apparmor.d/office-agent-bwrap > /dev/null <<'PROFILE'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile office-agent-bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          PROFILE
+            sudo apparmor_parser -r /etc/apparmor.d/office-agent-bwrap
+          fi
       - run: pnpm install --frozen-lockfile
       - run: pnpm ci:check
       - run: pnpm lint
