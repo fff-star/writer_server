@@ -1,6 +1,6 @@
 # ADR 0003: Require an operating-system security boundary
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-19
 
 ## Context

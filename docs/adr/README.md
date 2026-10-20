@@ -13,5 +13,6 @@ Each ADR records one significant decision. Supersede an old decision with a new 
 - [ADR 0009: Ground drafting in evidence behind an injectable writer](0009-grounded-drafting-boundary.md)
 - [ADR 0010: Conversation-first renderer shell](0010-conversation-first-shell.md) (superseded by ADR 0011)
 - [ADR 0011: Organize the renderer around projects](0011-project-centric-renderer.md)
+- [ADR 0012: Gate all workspace tools through a policy broker](0012-policy-broker-tool-registration.md)
 
 Return to the [documentation map](../README.md).
