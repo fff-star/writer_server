@@ -87,8 +87,61 @@ textarea {
 
 .app-shell {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.titlebar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding-left: 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+.titlebar-title {
+  color: var(--grey-ink);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.titlebar-actions {
+  display: flex;
+  align-self: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-actions button {
+  width: 42px;
+  padding: 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.titlebar-actions button:hover {
+  background: var(--surface-dim);
+}
+
+.titlebar-actions .titlebar-close:hover {
+  color: #fff;
+  background: var(--cinnabar);
 }
 
 .sidebar {

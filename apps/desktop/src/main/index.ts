@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import type { IpcMainInvokeEvent } from "electron";
 import {
   exportDocumentDocx,
@@ -21,6 +21,8 @@ const createWindow = (): BrowserWindow => {
     minWidth: 960,
     minHeight: 640,
     show: false,
+    frame: false,
+    backgroundColor: "#f7f4ed",
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
       contextIsolation: true,
@@ -32,6 +34,8 @@ const createWindow = (): BrowserWindow => {
   });
 
   window.once("ready-to-show", () => window.show());
+  window.on("maximize", () => window.webContents.send("window:maximized-changed", true));
+  window.on("unmaximize", () => window.webContents.send("window:maximized-changed", false));
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("https:")) {
       void shell.openExternal(url);
@@ -229,6 +233,24 @@ app.whenReady().then(() => {
     return deleted;
   });
 
+  ipcMain.on("window:minimize", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
+  });
+  ipcMain.on("window:toggle-maximize", (event) => {
+    const target = BrowserWindow.fromWebContents(event.sender);
+    if (target) {
+      if (target.isMaximized()) {
+        target.unmaximize();
+      } else {
+        target.maximize();
+      }
+    }
+  });
+  ipcMain.on("window:close", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
+  });
+
+  Menu.setApplicationMenu(null);
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
