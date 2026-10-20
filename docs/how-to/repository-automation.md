@@ -6,7 +6,7 @@ These settings require the actual GitHub repository and administrator access. Lo
 
 Protect the default branch and require a successful `quality` check, `windows-sandbox` check, and dependency review for every pull request. Require branches to be current before merging and block force pushes.
 
-Allow repository auto-merge, but do not bypass required checks. Release publication remains a separate manual action through the protected `preview-release` environment. The release workflow's `verify` job runs the unit tests, so it loads the same AppArmor profile for bubblewrap as the CI `quality` job; keep the two steps in sync.
+Allow repository auto-merge, but do not bypass required checks. Release publication remains a separate manual action through the protected `preview-release` environment. The release workflow's `verify` job runs the unit tests, so it loads the same AppArmor profile for bubblewrap as the CI `quality` job; keep the two steps in sync. The `publish` job uploads only regular files from `release/` as assets because `release/linux-unpacked` is a directory.
 
 ## Agent auto-merge
 

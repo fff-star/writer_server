@@ -121,4 +121,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: ${{ inputs.version }}
-        run: gh release create "v${RELEASE_VERSION}" release/* --target "${{ github.sha }}" --title "v${RELEASE_VERSION}" --notes-file release-notes.md --prerelease
+        # Upload only regular files: release/linux-unpacked is a directory
+        # (electron-builder output) and cannot be uploaded as an asset.
+        run: |
+          mapfile -t assets < <(find release -maxdepth 1 -type f)
+          gh release create "v${RELEASE_VERSION}" "${assets[@]}" --target "${{ github.sha }}" --title "v${RELEASE_VERSION}" --notes-file release-notes.md --prerelease
