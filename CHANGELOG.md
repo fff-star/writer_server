@@ -36,6 +36,10 @@ This project keeps a human-curated changelog inspired by Keep a Changelog. Versi
 - Broker-required gate for write-capable Subagent tasks such as the `workspace-edit` role.
 - Unit tests for conversation intent dispatch, evidence-service key resolution order, and library-service provider threading.
 
+### Changed
+
+- Frameless desktop window with an in-theme custom title bar (drag region, minimize/maximize/close through validated IPC) replacing the system decorations, and the default Electron application menu removed.
+
 ### Fixed
 
 - Pre-build typecheck for workspace consumers of `@office-agent/security` by serving its type declarations from source.

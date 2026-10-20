@@ -62,6 +62,18 @@ const api = {
     deleteSecret: (name: string) =>
       ipcRenderer.invoke("settings:delete-secret", name) as Promise<boolean>,
   },
+  windowControls: {
+    minimize: () => ipcRenderer.send("window:minimize"),
+    toggleMaximize: () => ipcRenderer.send("window:toggle-maximize"),
+    close: () => ipcRenderer.send("window:close"),
+    onMaximizedChange: (listener: (maximized: boolean) => void) => {
+      const handler = (_event: unknown, maximized: boolean) => listener(maximized);
+      ipcRenderer.on("window:maximized-changed", handler);
+      return () => {
+        ipcRenderer.removeListener("window:maximized-changed", handler);
+      };
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld("officeAgent", Object.freeze(api));

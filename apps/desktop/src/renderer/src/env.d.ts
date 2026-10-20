@@ -45,6 +45,12 @@ declare global {
         setSecret: (name: string, value: string) => Promise<void>;
         deleteSecret: (name: string) => Promise<boolean>;
       };
+      windowControls: {
+        minimize: () => void;
+        toggleMaximize: () => void;
+        close: () => void;
+        onMaximizedChange: (listener: (maximized: boolean) => void) => () => void;
+      };
     };
   }
 }
