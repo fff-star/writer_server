@@ -67,18 +67,21 @@ describe("sandbox self-check fail-closed reasoning", () => {
   it("reports not ok when the probe exits non-zero, times out, or throws", async () => {
     const { workspace } = await workspaceFixture();
     const nonZero = await probeLinuxSandbox(workspace, {
+      platform: "linux",
       run: async () => fakeResult({ code: 1 }),
     });
     expect(nonZero).toMatchObject({ ok: false });
     expect(nonZero.reason).toContain("code 1");
 
     const timedOut = await probeLinuxSandbox(workspace, {
+      platform: "linux",
       run: async () => fakeResult({ timedOut: true, code: null, signal: "SIGKILL" }),
     });
     expect(timedOut).toMatchObject({ ok: false });
     expect(timedOut.reason).toContain("timed out");
 
     const failedToStart = await probeLinuxSandbox(workspace, {
+      platform: "linux",
       run: async () => {
         throw new Error("spawn bwrap ENOENT");
       },

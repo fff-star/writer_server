@@ -141,7 +141,7 @@ describe("policy broker adversarial paths", () => {
   });
 
   it("denies shell when shellEnabled is false", async () => {
-    const { root, broker } = await brokerFixture({ shellEnabled: false });
+    const { root, broker } = await brokerFixture({ shellEnabled: false, platform: "linux" });
     await expect(broker.runShell("/bin/true")).rejects.toThrow("disabled by policy");
     const events = await auditEvents(root);
     expect(events.at(-1)).toMatchObject({ type: "shell.run", outcome: "denied" });
